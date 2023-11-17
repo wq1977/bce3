@@ -1,27 +1,39 @@
 import { ref } from "vue";
 import { defineStore } from "pinia";
 
-function words2paragraphs(words) {
-  const paragraphs = [];
-  let currentParagraph = null;
-  for (let idx in words) {
+function words2pieces(project, start, end) {
+  const words = project.words.slice(start, end + 1);
+  const pieces = [];
+  let currentPiece;
+  for (let idx = 0; idx < words.length; idx++) {
     const wordType = words[idx].type || "normal";
-    if (currentParagraph && wordType == currentParagraph.type) {
-      currentParagraph.end = words[idx].end;
-      currentParagraph.text += words[idx].word;
+    if (currentPiece && wordType == currentPiece.type) {
+      currentPiece.frameEnd = words[idx].end;
+      currentPiece.text = `${currentPiece.text}${words[idx].word}`;
     } else {
-      if (currentParagraph) paragraphs.push(currentParagraph);
-      currentParagraph = {
+      if (currentPiece) pieces.push(currentPiece);
+      currentPiece = {
         type: wordType,
-        start: words[idx].start,
-        end: words[idx].end,
+        frameStart: words[idx].start,
+        frameEnd: words[idx].end,
+        wordStart: idx + start,
         text: words[idx].word,
       };
     }
   }
-  if (currentParagraph) paragraphs.push(currentParagraph);
-  return paragraphs;
+  if (currentPiece) pieces.push(currentPiece);
+  return pieces;
 }
+
+function getWordIndex(project, piece, position) {
+  let len = 0,
+    idx = piece.wordStart;
+  while (len < position && idx < project.words.length) {
+    len += project.words[idx++].word.length;
+  }
+  return idx;
+}
+
 export const useProjectStore = defineStore("project", () => {
   const list = ref([]);
   async function load() {
@@ -39,13 +51,74 @@ export const useProjectStore = defineStore("project", () => {
       const enc = new TextDecoder("utf-8");
       const str = enc.decode(words);
       project.words = JSON.parse(str);
-      project.paragraphs = words2paragraphs(project.words);
     }
-    console.log(project);
+    const paragraphs = await api.call(
+      "readfile",
+      project.id,
+      "paragraphs.json"
+    );
+    if (!paragraphs && project.words) {
+      project.paragraphs = [
+        {
+          start: 0,
+          end: words.length - 1,
+          comment: "",
+          pieces: words2pieces(project, 0, words.length - 1),
+        },
+      ];
+    }
     project.loading = false;
+    console.log(project);
+  }
+  function splitParagraph(project, paragraphIdx, piece, position) {
+    const wordidx = getWordIndex(project, piece, position);
+    if (wordidx >= 0) {
+      const pstart = project.paragraphs[paragraphIdx].start;
+      const pend = project.paragraphs[paragraphIdx].end;
+      project.paragraphs[paragraphIdx] = {
+        start: pstart,
+        end: wordidx - 1,
+        comment: project.paragraphs[paragraphIdx].comment,
+        pieces: words2pieces(project, pstart, wordidx - 1),
+      };
+      if (wordidx <= pend) {
+        project.paragraphs.splice(paragraphIdx + 1, 0, {
+          start: wordidx,
+          end: pend,
+          comment: "",
+          pieces: words2pieces(project, wordidx, pend + 1),
+        });
+      }
+    }
+  }
+  async function playParagraph(project, idx) {}
+  function mergeBackParagraph(project, idx) {
+    if (idx > 0) {
+      const start = project.paragraphs[idx - 1].start;
+      const end = project.paragraphs[idx].end;
+      const comment = project.paragraphs[idx - 1].comment;
+      project.paragraphs.splice(idx - 1, 2, {
+        start,
+        end,
+        comment,
+        pieces: words2pieces(project, start, end),
+      });
+    }
   }
   load();
-  return { list, load, create, save, prepare, words2paragraphs };
+  async function saveProject(project) {}
+  return {
+    list,
+    load,
+    create,
+    save,
+    prepare,
+    words2pieces,
+    splitParagraph,
+    saveProject,
+    mergeBackParagraph,
+    playParagraph,
+  };
 });
 
 if (import.meta.vitest) {
@@ -55,21 +128,108 @@ if (import.meta.vitest) {
     setActivePinia(createPinia());
     global.api = { call: () => {} };
     const store = useProjectStore();
-    it("words2paragraphs", () => {
+    it("splitParagraph", () => {
+      const project = {
+        words: [
+          { word: "a", start: 0, end: 1 },
+          { word: "b", start: 1, end: 2 },
+        ],
+        paragraphs: [
+          {
+            start: 0,
+            end: 1,
+            comment: "1",
+          },
+        ],
+      };
+      store.splitParagraph(project, 0, { wordStart: 0 }, 1);
+      expect(project.paragraphs).toStrictEqual([
+        {
+          start: 0,
+          end: 0,
+          comment: "1",
+          pieces: [
+            {
+              frameStart: 0,
+              frameEnd: 1,
+              text: "a",
+              type: "normal",
+              wordStart: 0,
+            },
+          ],
+        },
+        {
+          start: 1,
+          end: 1,
+          comment: "",
+          pieces: [
+            {
+              frameStart: 1,
+              frameEnd: 2,
+              text: "b",
+              type: "normal",
+              wordStart: 1,
+            },
+          ],
+        },
+      ]);
+    });
+    it("getWordIndex", () => {
       expect(
-        words2paragraphs([
-          { start: 1, end: 2, word: "a" },
-          { start: 2, end: 3, word: "b" },
-        ])
-      ).toStrictEqual([{ start: 1, end: 3, text: "ab", type: "normal" }]);
+        getWordIndex(
+          { words: [{ word: "a" }, { word: "b" }] },
+          { wordStart: 0 },
+          1
+        )
+      ).toBe(1);
+    });
+    it("words2pieces", () => {
       expect(
-        words2paragraphs([
-          { start: 1, end: 2, word: "a" },
-          { start: 2, end: 3, word: "b", type: "delete" },
-        ])
+        words2pieces(
+          {
+            words: [
+              { start: 1, end: 2, word: "a" },
+              { start: 2, end: 3, word: "b" },
+            ],
+          },
+          0,
+          1
+        )
       ).toStrictEqual([
-        { start: 1, end: 2, text: "a", type: "normal" },
-        { start: 2, end: 3, text: "b", type: "delete" },
+        {
+          frameStart: 1,
+          frameEnd: 3,
+          text: "ab",
+          type: "normal",
+          wordStart: 0,
+        },
+      ]);
+      expect(
+        words2pieces(
+          {
+            words: [
+              { start: 1, end: 2, word: "a" },
+              { start: 2, end: 3, word: "b", type: "delete" },
+            ],
+          },
+          0,
+          1
+        )
+      ).toStrictEqual([
+        {
+          frameStart: 1,
+          frameEnd: 2,
+          text: "a",
+          type: "normal",
+          wordStart: 0,
+        },
+        {
+          frameStart: 2,
+          frameEnd: 3,
+          text: "b",
+          type: "delete",
+          wordStart: 1,
+        },
       ]);
     });
   });

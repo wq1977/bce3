@@ -1,21 +1,58 @@
 <script setup>
 import { ref } from 'vue'
+import { Icon } from '@iconify/vue'
 import { useRoute } from 'vue-router';
 import { useProjectStore } from '../stores/project';
 const store = useProjectStore()
 const route = useRoute()
 const project = ref(null);
-store.load().then(async () => {
+if (!store.list.length) {
+    store.load().then(init)
+} else {
+    init
+}
+async function init() {
     project.value = store.list.filter(p => p.id == route.query.id)[0]
     await store.prepare(project.value)
-})
+}
+
+async function setComment(event, paragraphIdx) {
+    const text = event.target.textContent.trim()
+    if (text) {
+        project.value.paragraphs[paragraphIdx].comment = text
+    } else {
+        store.mergeBackParagraph(project.value, paragraphIdx)
+    }
+    store.saveProject(project.value);
+}
+
+function preventEnter(e) {
+    if (e.key === 'Enter' || e.keyCode === 13) {
+        e.preventDefault();
+        e.target.blur()
+    }
+}
+
+function paragraphKeyDown(e, paragraphIdx, piece) {
+    if (e.code == 'Enter') {
+        const position = getSelection().baseOffset
+        store.splitParagraph(project.value, paragraphIdx, piece, position)
+    }
+}
 </script>
 <template>
     <div v-if="project">
         <h1>Editor -- {{ project.name }}</h1>
         <span v-if="project.loading">Loading ...</span>
-        <div v-for="paragraph in project.paragraphs" class="text-justify leading-relaxed p-2">
-            {{ paragraph.text }}
+        <div v-for="(paragraph, idx) in project.paragraphs" :key="`paragraph-${idx}`"
+            class="text-justify leading-relaxed p-2 focus:outline-none ">
+            <span contenteditable @keydown="preventEnter" @blur="setComment($event, idx)" class="text-red-600 mr-2 px-1">
+                {{ paragraph.comment ||
+                    `第${idx + 1}段` }}</span>
+            <Icon @click="store.playParagraph(project, idx)" icon="zondicons:play-outline" class="inline mr-2" />
+            <span v-for="piece in paragraph.pieces" @keydown="paragraphKeyDown($event, idx, piece)" tabindex="0"
+                class="focus:outline-none"> {{
+                    piece.text }} </span>
         </div>
         <div class="fixed right-1 bottom-1">
             <button @click="store.play()"
