@@ -28,6 +28,40 @@ const api = {
       "projects"
     );
   },
+  async save2file(event, projname, path, content) {
+    let abspath;
+    if (content && !projname) {
+      throw new Error("projname not found");
+    }
+    if (!content) {
+      //支持少一个参数绝对值路径模式
+      if (projname.indexOf("\\") >= 0 || projname.indexOf("/") >= 0) {
+        abspath = projname;
+      } else {
+        abspath = require("path").join(PROJ_BASE, projname);
+      }
+      content = path;
+    } else {
+      abspath = require("path").join(PROJ_BASE, projname, path);
+    }
+    const dirname = require("path").dirname(abspath);
+    if (!require("fs").existsSync(dirname)) {
+      require("fs").mkdirSync(dirname, { recursive: true });
+    }
+    if (content.constructor.name == "ArrayBuffer") {
+      content = Buffer.from(content);
+      require("fs").writeFileSync(abspath, content);
+    } else if (content[0] && content[0].constructor.name == "ArrayBuffer") {
+      const writeStream = require("fs").createWriteStream(abspath);
+      content.forEach((buffer) => {
+        writeStream.write(Buffer.from(buffer));
+      });
+      writeStream.end();
+    } else {
+      content = JSON.stringify(content);
+      require("fs").writeFileSync(abspath, content);
+    }
+  },
   readfile(_, proj, path) {
     let realpath;
     if (!path && proj.startsWith("/")) {

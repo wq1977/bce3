@@ -62,7 +62,21 @@ export const useProjectStore = defineStore("project", () => {
     list.value = await api.call("listProjects");
   }
   async function create() {}
-  async function save(project) {}
+  async function saveParagraph(project) {
+    await api.call(
+      "save2file",
+      project.id,
+      "paragraphs.json",
+      JSON.parse(
+        JSON.stringify(
+          project.paragraphs.map((p) => {
+            const { pieces, ...other } = p;
+            return other;
+          })
+        )
+      )
+    );
+  }
 
   // 加载Track,Words等
   async function prepare(project) {
@@ -88,6 +102,13 @@ export const useProjectStore = defineStore("project", () => {
           pieces: words2pieces(project, 0, words.length - 1),
         },
       ];
+    } else {
+      const enc = new TextDecoder("utf-8");
+      const str = enc.decode(paragraphs);
+      project.paragraphs = JSON.parse(str);
+      project.paragraphs.forEach(
+        (p) => (p.pieces = words2pieces(project, p.start, p.end))
+      );
     }
     project.loading = false;
     console.log(project);
@@ -111,6 +132,7 @@ export const useProjectStore = defineStore("project", () => {
           pieces: words2pieces(project, wordidx, pend + 1),
         });
       }
+      saveParagraph(project);
     }
   }
   async function loadTracks(project) {
@@ -208,20 +230,19 @@ export const useProjectStore = defineStore("project", () => {
         comment,
         pieces: words2pieces(project, start, end),
       });
+      saveParagraph(project);
     }
   }
   load();
-  async function saveProject(project) {}
   return {
     list,
     load,
     create,
-    save,
     prepare,
     words2pieces,
     splitParagraph,
-    saveProject,
     mergeBackParagraph,
+    saveParagraph,
     playParagraph,
   };
 });

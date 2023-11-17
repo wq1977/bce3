@@ -9,7 +9,7 @@ const project = ref(null);
 if (!store.list.length) {
     store.load().then(init)
 } else {
-    init
+    init()
 }
 async function init() {
     project.value = store.list.filter(p => p.id == route.query.id)[0]
@@ -20,10 +20,10 @@ async function setComment(event, paragraphIdx) {
     const text = event.target.textContent.trim()
     if (text) {
         project.value.paragraphs[paragraphIdx].comment = text
+        store.saveParagraph(project.value);
     } else {
         store.mergeBackParagraph(project.value, paragraphIdx)
     }
-    store.saveProject(project.value);
 }
 
 function preventEnter(e) {
