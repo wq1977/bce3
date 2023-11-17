@@ -57,7 +57,7 @@ function getWordIndex(project, piece, position) {
 
 export const useProjectStore = defineStore("project", () => {
   const list = ref([]);
-  const stopFunc = ref(null);
+  const stop = ref(null);
   async function load() {
     list.value = await api.call("listProjects");
   }
@@ -213,7 +213,7 @@ export const useProjectStore = defineStore("project", () => {
     nodes.forEach(({ when, offset, duration, node }) => {
       node.start(when, offset, duration);
     });
-    stopFunc.value = () => {
+    stop.value = () => {
       nodes.forEach(({ node }) => {
         node.stop();
       });
@@ -237,6 +237,7 @@ export const useProjectStore = defineStore("project", () => {
   return {
     list,
     load,
+    stop,
     create,
     prepare,
     words2pieces,

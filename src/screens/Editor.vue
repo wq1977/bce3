@@ -39,24 +39,29 @@ function paragraphKeyDown(e, paragraphIdx, piece) {
         store.splitParagraph(project.value, paragraphIdx, piece, position)
     }
 }
+
+let seed = 10000
+function randomKey() {
+    return `${Math.random()}-${seed++}`
+}
+
 </script>
 <template>
     <div v-if="project">
         <h1>Editor -- {{ project.name }}</h1>
         <span v-if="project.loading">Loading ...</span>
-        <div v-for="(paragraph, idx) in project.paragraphs" :key="`paragraph-${idx}`"
+        <div v-for="(paragraph, idx) in project.paragraphs" :key="randomKey()"
             class="text-justify leading-relaxed p-2 focus:outline-none ">
             <span contenteditable @keydown="preventEnter" @blur="setComment($event, idx)" class="text-red-600 mr-2 px-1">
-                {{ paragraph.comment ||
-                    `第${idx + 1}段` }}</span>
+                {{ `${paragraph.comment || '无注释'}` }}</span>
             <Icon @click="store.playParagraph(project, idx)" icon="zondicons:play-outline" class="inline mr-2" />
             <span v-for="piece in paragraph.pieces" @keydown="paragraphKeyDown($event, idx, piece)" tabindex="0"
                 class="focus:outline-none"> {{
                     piece.text }} </span>
         </div>
-        <div class="fixed right-1 bottom-1">
-            <button @click="store.play()"
-                class="w-[70px] h-[70px] rounded-full border-2 hover:bg-gray-600 bg-gray-600/70 text-white">play</button>
+        <div v-if="store.stop" class="fixed right-1 bottom-1">
+            <button @click="() => { store.stop(); store.stop = null }"
+                class="w-[70px] h-[70px] rounded-full border-2 hover:bg-gray-600 bg-gray-600/70 text-white">stop</button>
         </div>
     </div>
 </template>
