@@ -28,6 +28,21 @@ const api = {
       "projects"
     );
   },
+  readfile(_, proj, path) {
+    let realpath;
+    if (!path && proj.startsWith("/")) {
+      realpath = proj;
+    } else {
+      realpath = require("path").join(PROJ_BASE, proj);
+      if (path) {
+        realpath = require("path").join(realpath, path);
+      }
+    }
+    if (require("fs").existsSync(realpath)) {
+      return require("fs").readFileSync(realpath);
+    }
+    return null;
+  },
   async listProjects() {
     if (!require("fs").existsSync(PROJ_BASE)) {
       require("fs").mkdirSync(PROJ_BASE);
