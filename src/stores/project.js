@@ -1,6 +1,27 @@
 import { ref } from "vue";
 import { defineStore } from "pinia";
-
+function getTrackSource(track, idx, start, end) {
+  //start 和 end 是全局的以帧为单位的开始和结束时间，比如 100, 200
+  let frameskip = 0,
+    duration = end - start,
+    offset = start;
+  for (let i = 0; i < idx; i++) {
+    frameskip += track.origin[i].buffer.length;
+  }
+  // idx指的是第几个buffer,一个track可能有多个buffer,start和end有可能跨越多个track
+  // 将start和end映射到这个buffer的时候，start 有可能小于0，等于0或者大于0
+  offset -= frameskip;
+  if (offset < 0) {
+    duration += offset;
+    offset = 0;
+  }
+  if (offset > track.origin[idx].buffer.length) {
+    duration = 0;
+  } else if (offset + duration > track.origin[idx].buffer.length) {
+    duration -= offset + duration - track.origin[idx].buffer.length;
+  }
+  return { offset, duration };
+}
 function words2pieces(project, start, end) {
   const words = project.words.slice(start, end + 1);
   const pieces = [];
@@ -36,6 +57,7 @@ function getWordIndex(project, piece, position) {
 
 export const useProjectStore = defineStore("project", () => {
   const list = ref([]);
+  const stopFunc = ref(null);
   async function load() {
     list.value = await api.call("listProjects");
   }
@@ -91,7 +113,90 @@ export const useProjectStore = defineStore("project", () => {
       }
     }
   }
-  async function playParagraph(project, idx) {}
+  async function loadTracks(project) {
+    const context = new AudioContext();
+    for (let track of project.tracks) {
+      for (let idx = 0; idx < track.origin.length; idx++) {
+        if (!track.origin[idx].buffer) {
+          const fileBuffer = await api.call(
+            "readfile",
+            project.id,
+            track.origin[idx].path
+          );
+          const buffer = await context.decodeAudioData(fileBuffer.buffer);
+          track.origin[idx].buffer = buffer;
+        }
+      }
+    }
+  }
+
+  function preparePieceAudioSource(project, piece) {
+    if (piece.sources) return;
+    if (piece.type == "normal") {
+      piece.sources = [];
+      for (let track of project.tracks) {
+        let when = 0;
+        for (let idx = 0; idx < track.origin.length; idx++) {
+          const { offset, duration } = getTrackSource(
+            track,
+            idx,
+            piece.frameStart,
+            piece.frameEnd
+          );
+          if (duration > 0) {
+            piece.sources.push({
+              when,
+              offset,
+              duration,
+              buffer: track.origin[idx].buffer,
+            });
+            when += duration;
+          }
+        }
+      }
+    }
+  }
+  async function playParagraph(project, idx) {
+    await loadTracks(project);
+    project.paragraphs[idx].pieces.forEach((piece) =>
+      preparePieceAudioSource(project, piece)
+    );
+    let allsource = [];
+    let when = 0;
+    for (let piece of project.paragraphs[idx].pieces) {
+      allsource = [
+        ...allsource,
+        ...piece.sources.map((s) => ({ ...s, when: s.when + when })),
+      ];
+      when += piece.frameEnd - piece.frameStart;
+    }
+    play(allsource);
+  }
+  function play(sources) {
+    const ctx = new AudioContext();
+    let g = ctx.createGain();
+    g.gain.value = 0.5;
+    g.connect(ctx.destination);
+    const nodes = sources.map(({ when, offset, duration, buffer }) => {
+      const node = ctx.createBufferSource();
+      node.buffer = buffer;
+      node.connect(g);
+      return {
+        when: when / buffer.sampleRate,
+        offset: offset / buffer.sampleRate,
+        duration: duration / buffer.sampleRate,
+        node,
+      };
+    });
+    nodes.forEach(({ when, offset, duration, node }) => {
+      node.start(when, offset, duration);
+    });
+    stopFunc.value = () => {
+      nodes.forEach(({ node }) => {
+        node.stop();
+      });
+    };
+  }
   function mergeBackParagraph(project, idx) {
     if (idx > 0) {
       const start = project.paragraphs[idx - 1].start;
@@ -128,6 +233,79 @@ if (import.meta.vitest) {
     setActivePinia(createPinia());
     global.api = { call: () => {} };
     const store = useProjectStore();
+    it("getTrackSource", () => {
+      expect(
+        getTrackSource({ origin: [{ buffer: { length: 100 } }] }, 0, 0, 100)
+      ).toStrictEqual({
+        offset: 0,
+        duration: 100,
+      });
+      expect(
+        getTrackSource(
+          {
+            origin: [{ buffer: { length: 100 } }, { buffer: { length: 100 } }],
+          },
+          0,
+          0,
+          101
+        )
+      ).toStrictEqual({
+        offset: 0,
+        duration: 100,
+      });
+      expect(
+        getTrackSource(
+          {
+            origin: [{ buffer: { length: 100 } }, { buffer: { length: 100 } }],
+          },
+          0,
+          100,
+          101
+        )
+      ).toStrictEqual({
+        offset: 100,
+        duration: 0,
+      });
+      expect(
+        getTrackSource(
+          {
+            origin: [{ buffer: { length: 100 } }, { buffer: { length: 100 } }],
+          },
+          1,
+          0,
+          90
+        )
+      ).toStrictEqual({
+        offset: 0,
+        duration: -10,
+      });
+      expect(
+        getTrackSource(
+          {
+            origin: [{ buffer: { length: 100 } }, { buffer: { length: 100 } }],
+          },
+          1,
+          120,
+          170
+        )
+      ).toStrictEqual({
+        offset: 20,
+        duration: 50,
+      });
+      expect(
+        getTrackSource(
+          {
+            origin: [{ buffer: { length: 100 } }, { buffer: { length: 100 } }],
+          },
+          1,
+          120,
+          220
+        )
+      ).toStrictEqual({
+        offset: 20,
+        duration: 80,
+      });
+    });
     it("splitParagraph", () => {
       const project = {
         words: [
