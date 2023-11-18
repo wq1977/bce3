@@ -76,9 +76,8 @@ function paragraphKeyDown(e, paragraphIdx, piece) {
     }
 }
 
-let seed = 10000
-function randomKey() {
-    return `${Math.random()}-${seed++}`
+function focusParagraph(idx) {
+    paraRefs.value[idx].scrollIntoView({ behavior: "smooth" });
 }
 
 </script>
@@ -105,7 +104,7 @@ function randomKey() {
     <div class="fixed right-[20px] top-[20px]  ">
         <Draggable v-model="titlelist" item-key="title">
             <template #item="{ element }">
-                <div
+                <div @click="focusParagraph(element.index)"
                     class="bg-gray-100 cursor-grab border-2 mb-1 rounded p-2 w-[240px] text-ellipsis overflow-hidden whitespace-nowrap">
                     {{ element.title }}</div>
             </template>
