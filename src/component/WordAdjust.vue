@@ -1,5 +1,5 @@
 <script setup>
-import { defineProps, ref, computed, onMounted, watch, getCurrentInstance } from 'vue';
+import { ref, computed, onMounted, watch, getCurrentInstance } from 'vue';
 import { useProjectStore } from '../stores/project';
 const store = useProjectStore()
 const props = defineProps(['from', 'to', 'projectid'])
@@ -61,8 +61,8 @@ function dragStart(e, wordidx) {
             if (word.end == origin) word.end = newvalue
         }
         cursorLeft.value = -1
-        store.playWords(project.value, props.from + wordidx, props.to)
-
+        store.playWordsRaw(project.value, props.from + wordidx, props.to)
+        store.saveWords(project.value)
     };
     document.onmousemove = (e) => {
         e.preventDefault();

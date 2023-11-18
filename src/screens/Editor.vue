@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, } from 'vue'
+import { ref, computed, watch } from 'vue'
 import WordAdjust from '../component/WordAdjust.vue'
 import Draggable from 'vuedraggable'
 import { Icon } from '@iconify/vue'
@@ -76,12 +76,25 @@ function paragraphKeyDown(e, paragraphIdx, piece) {
 }
 
 function focusParagraph(idx) {
-    paraRefs.value[idx].scrollIntoView({ behavior: "smooth" });
+    paraRefs.value[idx].scrollIntoView({ behavior: "smooth", block: 'center' });
 }
+
 
 const selWordStart = ref(null)
 const selWordEnd = ref(null)
 const selParagraph = ref(null)
+
+function adjustWords(idx) {
+    doAdjust.value = true
+    const unwatch = watch(doAdjust, () => {
+        unwatch()
+        store.updateParagraphsPieces(project.value, idx)
+    })
+}
+
+function playSelection() {
+    store.playWords(project.value, selWordStart.value, selWordEnd.value)
+}
 
 function setSelectionTag(paragraphIdx, tag) {
     if (selWordStart.value && selWordEnd.value) {
@@ -136,7 +149,7 @@ function pieceMouseup() {
                             <span contenteditable @keydown="preventEnter" @blur="setComment($event, idx)"
                                 class="text-red-600 mr-2 px-1">
                                 {{ `${paragraph.comment || '无注释'}` }}</span>
-                            <Icon @click="store.playParagraph(project, idx)" icon="zondicons:play-outline"
+                            <Icon @click="store.playParagraph(project, paragraph)" icon="zondicons:play-outline"
                                 class="inline mr-2" />
                             <span>&nbsp;&nbsp;</span>
                             <span v-for="(piece, pidx) in paragraph.pieces" :data-paragraph="idx" :data-piece="pidx"
@@ -151,7 +164,11 @@ function pieceMouseup() {
                         <ContextMenuContent
                             class=" min-w-[100px] z-30 bg-white outline-none rounded-md p-[5px] shadow-[0px_10px_38px_-10px_rgba(22,_23,_24,_0.35),_0px_10px_20px_-15px_rgba(22,_23,_24,_0.2)] will-change-[opacity,transform] data-[side=top]:animate-slideDownAndFade data-[side=right]:animate-slideLeftAndFade data-[side=bottom]:animate-slideUpAndFade data-[side=left]:animate-slideRightAndFade"
                             :side-offset="5">
-
+                            <ContextMenuItem
+                                class="group text-[13px] leading-none  rounded-[3px] flex items-center h-[25px] px-[5px] relative pl-[25px] select-none outline-none  data-[disabled]:pointer-events-none data-[highlighted]:bg-green-600 data-[highlighted]:text-green-400"
+                                @click="playSelection(idx)">
+                                播放
+                            </ContextMenuItem>
                             <ContextMenuItem
                                 class="group text-[13px] leading-none  rounded-[3px] flex items-center h-[25px] px-[5px] relative pl-[25px] select-none outline-none  data-[disabled]:pointer-events-none data-[highlighted]:bg-green-600 data-[highlighted]:text-green-400"
                                 @click="setSelectionTag(idx, 'delete')">
@@ -164,7 +181,7 @@ function pieceMouseup() {
                             </ContextMenuItem>
                             <ContextMenuItem
                                 class="group text-[13px] leading-none  rounded-[3px] flex items-center h-[25px] px-[5px] relative pl-[25px] select-none outline-none  data-[disabled]:pointer-events-none data-[highlighted]:bg-green-600 data-[highlighted]:text-green-400"
-                                @click="doAdjust = true">
+                                @click="adjustWords(idx)">
                                 调整
                             </ContextMenuItem>
                         </ContextMenuContent>

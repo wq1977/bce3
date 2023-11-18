@@ -180,14 +180,14 @@ export const useProjectStore = defineStore("project", () => {
       piece.duration = 0;
     }
   }
-  async function playParagraph(project, idx) {
+  async function playParagraph(project, paragraph) {
     await loadTracks(project);
-    project.paragraphs[idx].pieces.forEach((piece) =>
+    paragraph.pieces.forEach((piece) =>
       preparePieceAudioSource(project, piece)
     );
     let allsource = [];
     let when = 0;
-    for (let piece of project.paragraphs[idx].pieces) {
+    for (let piece of paragraph.pieces) {
       allsource = [
         ...allsource,
         ...piece.sources.map((s) => ({ ...s, when: s.when + when })),
@@ -248,6 +248,15 @@ export const useProjectStore = defineStore("project", () => {
   }
 
   async function playWords(project, from, to) {
+    const dummyParagraph = {
+      start: from,
+      end: to,
+      piece: words2pieces(project, from, to),
+    };
+    await playParagraph(project, dummyParagraph);
+  }
+
+  async function playWordsRaw(project, from, to) {
     const buffer = await getWordsBuffer(project, from, to);
     if (buffer) {
       const ctx = new AudioContext();
@@ -315,6 +324,13 @@ export const useProjectStore = defineStore("project", () => {
     saveWords(project);
     saveParagraph(project);
   }
+  function updateParagraphsPieces(project, idx) {
+    project.paragraphs[idx].pieces = words2pieces(
+      project,
+      project.paragraphs[idx].start,
+      project.paragraphs[idx].end
+    );
+  }
   load();
   return {
     list,
@@ -331,6 +347,9 @@ export const useProjectStore = defineStore("project", () => {
     setTag,
     getWordsBuffer,
     playWords,
+    playWordsRaw,
+    saveWords,
+    updateParagraphsPieces,
   };
 });
 
