@@ -32,7 +32,15 @@ function words2pieces(project, start, end) {
       currentPiece.frameEnd = words[idx].end;
       currentPiece.text = `${currentPiece.text}${words[idx].word}`;
     } else {
-      if (currentPiece) pieces.push(currentPiece);
+      if (currentPiece) {
+        pieces.push({
+          ...currentPiece,
+          duration:
+            currentPiece.type == "delete"
+              ? 0
+              : currentPiece.frameEnd - currentPiece.frameStart,
+        });
+      }
       currentPiece = {
         type: wordType,
         frameStart: words[idx].start,
