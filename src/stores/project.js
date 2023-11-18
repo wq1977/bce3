@@ -46,15 +46,6 @@ function words2pieces(project, start, end) {
   return pieces;
 }
 
-function getWordIndex(project, piece, position) {
-  let len = 0,
-    idx = piece.wordStart;
-  while (len < position && idx < project.words.length) {
-    len += project.words[idx++].word.length;
-  }
-  return idx;
-}
-
 export const useProjectStore = defineStore("project", () => {
   const list = ref([]);
   const stop = ref(null);
@@ -219,6 +210,15 @@ export const useProjectStore = defineStore("project", () => {
       });
     };
   }
+  function getWordIndex(project, piece, position) {
+    let len = 0,
+      idx = piece.wordStart;
+    while (len < position && idx < project.words.length) {
+      len += project.words[idx++].word.length;
+    }
+    return idx;
+  }
+
   function mergeBackParagraph(project, idx) {
     if (idx > 0) {
       const start = project.paragraphs[idx - 1].start;
@@ -233,6 +233,19 @@ export const useProjectStore = defineStore("project", () => {
       saveParagraph(project);
     }
   }
+
+  function setTag(project, paragraphIdx, wordstart, wordend, tag) {
+    if (project.paragraphs[paragraphIdx].start > wordstart) return;
+    if (project.paragraphs[paragraphIdx].end < wordend) return;
+    for (let i = wordstart; i <= wordend; i++) {
+      project.words[i].type = tag;
+    }
+    project.paragraphs[paragraphIdx].pieces = words2pieces(
+      project,
+      project.paragraphs[paragraphIdx].start,
+      project.paragraphs[paragraphIdx].end
+    );
+  }
   load();
   return {
     list,
@@ -245,6 +258,8 @@ export const useProjectStore = defineStore("project", () => {
     mergeBackParagraph,
     saveParagraph,
     playParagraph,
+    getWordIndex,
+    setTag,
   };
 });
 
