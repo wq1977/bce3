@@ -1,4 +1,4 @@
-import { ref } from "vue";
+import { ref, watch } from "vue";
 import { defineStore } from "pinia";
 function getTrackSource(track, idx, start, end) {
   //start 和 end 是全局的以帧为单位的开始和结束时间，比如 100, 200
@@ -49,6 +49,11 @@ function words2pieces(project, start, end) {
 export const useProjectStore = defineStore("project", () => {
   const list = ref([]);
   const stop = ref(null);
+  watch(stop, (_, old) => {
+    if (old) {
+      old();
+    }
+  });
   async function load() {
     list.value = await api.call("listProjects");
   }
@@ -214,9 +219,14 @@ export const useProjectStore = defineStore("project", () => {
         node,
       };
     });
+    nodes.sort((a, b) => a.when + a.duration - b.when - b.duration);
     nodes.forEach(({ when, offset, duration, node }) => {
       node.start(when, offset, duration);
     });
+    nodes[nodes.length - 1].node.onended = function () {
+      stop.value && stop.value();
+      stop.value = null;
+    };
     stop.value = () => {
       nodes.forEach(({ node }) => {
         node.stop();
@@ -251,7 +261,7 @@ export const useProjectStore = defineStore("project", () => {
     const dummyParagraph = {
       start: from,
       end: to,
-      piece: words2pieces(project, from, to),
+      pieces: words2pieces(project, from, to),
     };
     await playParagraph(project, dummyParagraph);
   }

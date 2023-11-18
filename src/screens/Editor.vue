@@ -76,7 +76,7 @@ function paragraphKeyDown(e, paragraphIdx, piece) {
 }
 
 function focusParagraph(idx) {
-    paraRefs.value[idx].scrollIntoView({ behavior: "smooth", block: 'center' });
+    paraRefs.value[idx].scrollIntoView({ behavior: "smooth", });
 }
 
 
