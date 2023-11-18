@@ -1,5 +1,8 @@
 import { ref, watch } from "vue";
 import { defineStore } from "pinia";
+import toWav from "audiobuffer-to-wav";
+const PARAGRAPH_DELAY = 44100;
+
 function getTrackSource(track, idx, start, end) {
   //start 和 end 是全局的以帧为单位的开始和结束时间，比如 100, 200
   let frameskip = 0,
@@ -50,7 +53,15 @@ function words2pieces(project, start, end) {
       };
     }
   }
-  if (currentPiece) pieces.push(currentPiece);
+  if (currentPiece) {
+    pieces.push({
+      ...currentPiece,
+      duration:
+        currentPiece.type == "delete"
+          ? 0
+          : currentPiece.frameEnd - currentPiece.frameStart,
+    });
+  }
   return pieces;
 }
 
@@ -193,6 +204,39 @@ export const useProjectStore = defineStore("project", () => {
       piece.duration = 0;
     }
   }
+
+  async function doExport(project) {
+    await loadTracks(project);
+    const validParagraphs = project.paragraphs
+      .filter((p) => p.comment)
+      .sort((a, b) => a.sequence - b.sequence);
+    for (let paragraph of validParagraphs) {
+      paragraph.pieces.forEach((piece) =>
+        preparePieceAudioSource(project, piece)
+      );
+    }
+    let allsource = [];
+    let when = 0;
+    for (let paragraph of validParagraphs) {
+      for (let piece of paragraph.pieces) {
+        allsource = [
+          ...allsource,
+          ...piece.sources.map((s) => ({ ...s, when: s.when + when })),
+        ];
+        when += isNaN(piece.duration)
+          ? piece.frameEnd - piece.frameStart
+          : piece.duration;
+      }
+      when += PARAGRAPH_DELAY;
+    }
+    const buffer = await getSourcesBuffer(allsource);
+    await api.call(
+      "save2file",
+      `/Users/wwq/Desktop/${project.id}.wav`,
+      toWav(buffer)
+    );
+  }
+
   async function playParagraph(project, paragraph) {
     await loadTracks(project);
     paragraph.pieces.forEach((piece) =>
@@ -257,7 +301,10 @@ export const useProjectStore = defineStore("project", () => {
   }
 
   function getParagraphDuration(paragraph) {
-    return paragraph.pieces.reduce((r, i) => r + getPieceDuration(i), 0);
+    return (
+      paragraph.pieces.reduce((r, i) => r + getPieceDuration(i), 0) +
+      PARAGRAPH_DELAY
+    );
   }
 
   function mergeBackParagraph(project, idx) {
@@ -298,6 +345,36 @@ export const useProjectStore = defineStore("project", () => {
     }
   }
 
+  async function getSourcesBuffer(sources) {
+    sources.sort((a, b) => a.when + a.duration - b.when - b.duration);
+    const lastSource = sources[sources.length - 1];
+    const offlineCtx = new OfflineAudioContext(
+      2,
+      lastSource.when + lastSource.duration,
+      lastSource.buffer.sampleRate
+    );
+    const g = offlineCtx.createGain();
+    g.gain.value = 1;
+    g.connect(offlineCtx.destination);
+    const nodes = [];
+    for (let src of sources) {
+      const { when, offset, duration, buffer } = src;
+      const node = offlineCtx.createBufferSource();
+      node.buffer = buffer;
+      node.connect(g);
+      nodes.push({
+        when: when / buffer.sampleRate,
+        offset: offset / buffer.sampleRate,
+        duration: duration / buffer.sampleRate,
+        node,
+      });
+    }
+    for (let { when, offset, duration, node } of nodes) {
+      node.start(when, offset, duration);
+    }
+    return await offlineCtx.startRendering();
+  }
+
   async function getWordsBuffer(project, from, to) {
     await loadTracks(project);
     const piece = {
@@ -307,34 +384,7 @@ export const useProjectStore = defineStore("project", () => {
     preparePieceAudioSource(project, piece);
     // console.log(piece);
     if (piece.sources.length) {
-      const offlineCtx = new OfflineAudioContext(
-        piece.sources[0].buffer.numberOfChannels,
-        piece.frameEnd - piece.frameStart + 1,
-        piece.sources[0].buffer.sampleRate
-      );
-      // const offlineCtx = new AudioContext();
-      const g = offlineCtx.createGain();
-      g.gain.value = 1;
-      g.connect(offlineCtx.destination);
-      const nodes = [];
-      console.log(piece.sources);
-      for (let src of piece.sources) {
-        const { when, offset, duration, buffer } = src;
-        const node = offlineCtx.createBufferSource();
-        node.buffer = buffer;
-        node.connect(g);
-        nodes.push({
-          when: when / buffer.sampleRate,
-          offset: offset / buffer.sampleRate,
-          duration: duration / buffer.sampleRate,
-          node,
-        });
-      }
-      for (let { when, offset, duration, node } of nodes) {
-        console.log("***** play", when, offset, duration, node);
-        node.start(when, offset, duration);
-      }
-      return await offlineCtx.startRendering();
+      return getSourcesBuffer(piece.sources);
     }
   }
 
@@ -379,6 +429,7 @@ export const useProjectStore = defineStore("project", () => {
     saveWords,
     updateParagraphsPieces,
     getParagraphDuration,
+    doExport,
   };
 });
 

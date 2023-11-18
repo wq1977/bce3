@@ -159,7 +159,7 @@ function pieceMouseup(e) {
 </script>
 <template>
     <div v-if="project">
-        <h1>Editor -- {{ project.name }}</h1>
+        <h1>Editor -- {{ project.name }} <button @click="store.doExport(project)">导出</button></h1>
         <ContextMenuRoot :modal="false">
             <ContextMenuTrigger :disabled="!selWordEnd">
                 <div class="mr-[280px]">
