@@ -70,7 +70,7 @@ export const useProjectStore = defineStore("project", () => {
       JSON.parse(
         JSON.stringify(
           project.paragraphs.map((p) => {
-            const { pieces, ...other } = p;
+            const { pieces, index, ...other } = p;
             return other;
           })
         )
