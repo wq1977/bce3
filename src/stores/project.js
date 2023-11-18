@@ -242,6 +242,16 @@ export const useProjectStore = defineStore("project", () => {
     return idx;
   }
 
+  function getPieceDuration(piece) {
+    return isNaN(piece.duration)
+      ? piece.frameEnd - piece.frameStart
+      : piece.duration;
+  }
+
+  function getParagraphDuration(paragraph) {
+    return paragraph.pieces.reduce((r, i) => r + getPieceDuration(i), 0);
+  }
+
   function mergeBackParagraph(project, idx) {
     if (idx > 0) {
       const start = project.paragraphs[idx - 1].start;
@@ -360,6 +370,7 @@ export const useProjectStore = defineStore("project", () => {
     playWordsRaw,
     saveWords,
     updateParagraphsPieces,
+    getParagraphDuration,
   };
 });
 

@@ -16,6 +16,14 @@ if (!store.list.length) {
     init()
 }
 
+function fmtFrameDuration(d) {
+    const secs = d / 44100
+    const hour = Math.floor(secs / 3600)
+    const minute = Math.floor((secs % 3600) / 60)
+    const sec = Math.floor(secs % 60)
+    return `${hour < 10 ? '0' : ''}${hour}:${minute < 10 ? '0' : ''}${minute}:${sec < 10 ? '0' : ''}${sec}`
+}
+
 const titlelist = computed({
     get: () => {
         if (!project.value) return []
@@ -28,13 +36,19 @@ const titlelist = computed({
                 result.push({
                     title: p.comment,
                     index,
-                    sequence: p.sequence
+                    sequence: p.sequence,
                 })
             }
         }
         const list = result.sort((a, b) =>
             (a.sequence || a.index) - (b.sequence || b.index)
         )
+        let framelen = 0;
+        for (let value of list) {
+            const duration = store.getParagraphDuration(project.value.paragraphs[value.index])
+            framelen += duration
+            value.duration = fmtFrameDuration(framelen)
+        }
         return list
 
     },
@@ -84,67 +98,73 @@ const selWordStart = ref(null)
 const selWordEnd = ref(null)
 const selParagraph = ref(null)
 
-function adjustWords(idx) {
-    doAdjust.value = true
-    const unwatch = watch(doAdjust, () => {
-        unwatch()
-        store.updateParagraphsPieces(project.value, idx)
-    })
+function adjustWords() {
+    setTimeout(() => {
+        doAdjust.value = true
+        const unwatch = watch(doAdjust, () => {
+            unwatch()
+            store.updateParagraphsPieces(project.value, selParagraph.value)
+        })
+    }, 100);
 }
 
 function playSelection() {
     store.playWords(project.value, selWordStart.value, selWordEnd.value)
 }
 
-function setSelectionTag(paragraphIdx, tag) {
+function setSelectionTag(tag) {
     if (selWordStart.value && selWordEnd.value) {
         console.log('set selection to', tag)
-        store.setTag(project.value, paragraphIdx, selWordStart.value, selWordEnd.value, tag)
+        store.setTag(project.value, selParagraph.value, selWordStart.value, selWordEnd.value, tag)
     }
 }
 
-function pieceMouseup() {
-    const selection = getSelection()
-    if (selection.type == 'Range') {
-        let nodeBase = selection.baseNode
-        if (nodeBase.nodeName !== 'SPAN') {
-            nodeBase = nodeBase.parentNode
-        }
-        if (nodeBase.nodeName !== 'SPAN') return;
-        let nodeExtent = selection.extentNode
-        if (nodeExtent.nodeName !== 'SPAN') {
-            nodeExtent = nodeExtent.parentNode
-        }
-        if (nodeExtent.nodeName !== 'SPAN') return;
+function pieceMouseup(e) {
+    if (e.button != 0) return; //左键
+    setTimeout(() => {
+        const selection = getSelection()
+        if (selection.type == 'Range') {
+            let nodeBase = selection.baseNode
+            if (nodeBase.nodeName !== 'SPAN') {
+                nodeBase = nodeBase.parentNode
+            }
+            if (nodeBase.nodeName !== 'SPAN') return;
+            let nodeExtent = selection.extentNode
+            if (nodeExtent.nodeName !== 'SPAN') {
+                nodeExtent = nodeExtent.parentNode
+            }
+            if (nodeExtent.nodeName !== 'SPAN') return;
 
-        const paragraphIdxBase = parseInt(nodeBase.getAttribute('data-paragraph'))
-        const paragraphIdxExtent = parseInt(nodeExtent.getAttribute('data-paragraph'))
-        if (paragraphIdxBase !== paragraphIdxExtent) return;
-        const pieceIdxBase = parseInt(nodeBase.getAttribute('data-piece'))
-        const pieceIdxExtent = parseInt(nodeExtent.getAttribute('data-piece'))
-        const vbase = selection.baseOffset
-        const wordBase = store.getWordIndex(project.value, project.value.paragraphs[paragraphIdxBase].pieces[pieceIdxBase], vbase)
-        const vextent = selection.extentOffset
-        const wordExtent = store.getWordIndex(project.value, project.value.paragraphs[paragraphIdxExtent].pieces[pieceIdxExtent], vextent)
-        selWordStart.value = Math.min(wordBase, wordExtent)
-        selWordEnd.value = Math.max(wordBase, wordExtent)
-        selParagraph.value = paragraphIdxBase
-    } else {
-        selWordStart.value = null
-        selWordEnd.value = null
-        selParagraph.value = null
-    }
+            const paragraphIdxBase = parseInt(nodeBase.getAttribute('data-paragraph'))
+            const paragraphIdxExtent = parseInt(nodeExtent.getAttribute('data-paragraph'))
+            if (paragraphIdxBase !== paragraphIdxExtent) return;
+            const pieceIdxBase = parseInt(nodeBase.getAttribute('data-piece'))
+            const pieceIdxExtent = parseInt(nodeExtent.getAttribute('data-piece'))
+            const vbase = selection.baseOffset
+            const wordBase = store.getWordIndex(project.value, project.value.paragraphs[paragraphIdxBase].pieces[pieceIdxBase], vbase)
+            const vextent = selection.extentOffset
+            const wordExtent = store.getWordIndex(project.value, project.value.paragraphs[paragraphIdxExtent].pieces[pieceIdxExtent], vextent)
+            selWordStart.value = Math.min(wordBase, wordExtent)
+            selWordEnd.value = Math.max(wordBase, wordExtent)
+            selParagraph.value = paragraphIdxBase
+        } else {
+            selWordStart.value = null
+            selWordEnd.value = null
+            selParagraph.value = null
+        }
+
+    }, 300);
 }
 
 </script>
 <template>
     <div v-if="project">
         <h1>Editor -- {{ project.name }}</h1>
-        <div class="mr-[280px]">
-            <div ref="paraRefs" v-for="(paragraph, idx) in project.paragraphs"
-                class="text-justify leading-relaxed p-2 focus:outline-none " :key="paragraph.start">
-                <ContextMenuRoot>
-                    <ContextMenuTrigger :disabled="!selWordEnd">
+        <ContextMenuRoot :modal="false">
+            <ContextMenuTrigger :disabled="!selWordEnd">
+                <div class="mr-[280px]">
+                    <div ref="paraRefs" v-for="(paragraph, idx) in project.paragraphs"
+                        class="text-justify leading-relaxed p-2 focus:outline-none " :key="paragraph.start">
                         <div>
                             <span contenteditable @keydown="preventEnter" @blur="setComment($event, idx)"
                                 class="text-red-600 mr-2 px-1">
@@ -159,41 +179,42 @@ function pieceMouseup() {
                                 {{
                                     piece.text }} </span>
                         </div>
-                    </ContextMenuTrigger>
-                    <ContextMenuPortal>
-                        <ContextMenuContent
-                            class=" min-w-[100px] z-30 bg-white outline-none rounded-md p-[5px] shadow-[0px_10px_38px_-10px_rgba(22,_23,_24,_0.35),_0px_10px_20px_-15px_rgba(22,_23,_24,_0.2)] will-change-[opacity,transform] data-[side=top]:animate-slideDownAndFade data-[side=right]:animate-slideLeftAndFade data-[side=bottom]:animate-slideUpAndFade data-[side=left]:animate-slideRightAndFade"
-                            :side-offset="5">
-                            <ContextMenuItem
-                                class="group text-[13px] leading-none  rounded-[3px] flex items-center h-[25px] px-[5px] relative pl-[25px] select-none outline-none  data-[disabled]:pointer-events-none data-[highlighted]:bg-green-600 data-[highlighted]:text-green-400"
-                                @click="playSelection(idx)">
-                                播放
-                            </ContextMenuItem>
-                            <ContextMenuItem
-                                class="group text-[13px] leading-none  rounded-[3px] flex items-center h-[25px] px-[5px] relative pl-[25px] select-none outline-none  data-[disabled]:pointer-events-none data-[highlighted]:bg-green-600 data-[highlighted]:text-green-400"
-                                @click="setSelectionTag(idx, 'delete')">
-                                删除
-                            </ContextMenuItem>
-                            <ContextMenuItem
-                                class="group text-[13px] leading-none  rounded-[3px] flex items-center h-[25px] px-[5px] relative pl-[25px] select-none outline-none  data-[disabled]:pointer-events-none data-[highlighted]:bg-green-600 data-[highlighted]:text-green-400"
-                                @click="setSelectionTag(idx, 'normal')">
-                                正常
-                            </ContextMenuItem>
-                            <ContextMenuItem
-                                class="group text-[13px] leading-none  rounded-[3px] flex items-center h-[25px] px-[5px] relative pl-[25px] select-none outline-none  data-[disabled]:pointer-events-none data-[highlighted]:bg-green-600 data-[highlighted]:text-green-400"
-                                @click="adjustWords(idx)">
-                                调整
-                            </ContextMenuItem>
-                        </ContextMenuContent>
-                    </ContextMenuPortal>
-                </ContextMenuRoot>
-            </div>
-        </div>
-        <div v-if="store.stop" class="fixed right-1 bottom-1">
+
+                    </div>
+                </div>
+            </ContextMenuTrigger>
+            <ContextMenuPortal>
+                <ContextMenuContent
+                    class=" min-w-[100px] z-30 bg-white outline-none rounded-md p-[5px] shadow-[0px_10px_38px_-10px_rgba(22,_23,_24,_0.35),_0px_10px_20px_-15px_rgba(22,_23,_24,_0.2)] will-change-[opacity,transform] data-[side=top]:animate-slideDownAndFade data-[side=right]:animate-slideLeftAndFade data-[side=bottom]:animate-slideUpAndFade data-[side=left]:animate-slideRightAndFade"
+                    :side-offset="5">
+                    <ContextMenuItem
+                        class="group text-[13px] leading-none  rounded-[3px] flex items-center h-[25px] px-[5px] relative pl-[25px] select-none outline-none  data-[disabled]:pointer-events-none data-[highlighted]:bg-green-600 data-[highlighted]:text-green-400"
+                        @click="playSelection()">
+                        播放
+                    </ContextMenuItem>
+                    <ContextMenuItem
+                        class="group text-[13px] leading-none  rounded-[3px] flex items-center h-[25px] px-[5px] relative pl-[25px] select-none outline-none  data-[disabled]:pointer-events-none data-[highlighted]:bg-green-600 data-[highlighted]:text-green-400"
+                        @click="setSelectionTag('delete')">
+                        删除
+                    </ContextMenuItem>
+                    <ContextMenuItem
+                        class="group text-[13px] leading-none  rounded-[3px] flex items-center h-[25px] px-[5px] relative pl-[25px] select-none outline-none  data-[disabled]:pointer-events-none data-[highlighted]:bg-green-600 data-[highlighted]:text-green-400"
+                        @click="setSelectionTag('normal')">
+                        正常
+                    </ContextMenuItem>
+                    <ContextMenuItem
+                        class="group text-[13px] leading-none  rounded-[3px] flex items-center h-[25px] px-[5px] relative pl-[25px] select-none outline-none  data-[disabled]:pointer-events-none data-[highlighted]:bg-green-600 data-[highlighted]:text-green-400"
+                        @click="adjustWords()">
+                        调整
+                    </ContextMenuItem>
+                </ContextMenuContent>
+            </ContextMenuPortal>
+        </ContextMenuRoot>
+        <div v-if="store.stop" class="fixed right-1 bottom-1 z-10">
             <button @click="() => { store.stop(); store.stop = null }"
                 class="w-[70px] h-[70px] rounded-full border-2 hover:bg-gray-600 bg-gray-600/70 text-white">stop</button>
         </div>
-        <DialogRoot v-model:open="doAdjust">
+        <DialogRoot v-model:open="doAdjust" :modal="false">
             <DialogPortal>
                 <DialogOverlay class="bg-blackA9 data-[state=open]:animate-overlayShow fixed inset-0 z-30" />
                 <DialogContent
@@ -220,7 +241,7 @@ function pieceMouseup() {
                 <template #item="{ element }">
                     <div @click="focusParagraph(element.index)"
                         class="bg-gray-100 cursor-grab border-2 mb-1 rounded p-2 w-[240px] text-ellipsis overflow-hidden whitespace-nowrap">
-                        {{ element.title }}</div>
+                        {{ element.duration }} {{ element.title }}</div>
                 </template>
             </Draggable>
         </div>
