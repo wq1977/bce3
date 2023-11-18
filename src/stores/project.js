@@ -53,6 +53,14 @@ export const useProjectStore = defineStore("project", () => {
     list.value = await api.call("listProjects");
   }
   async function create() {}
+  async function saveWords(project) {
+    await api.call(
+      "save2file",
+      project.id,
+      "words.json",
+      JSON.parse(JSON.stringify(project.words))
+    );
+  }
   async function saveParagraph(project) {
     await api.call(
       "save2file",
@@ -145,7 +153,7 @@ export const useProjectStore = defineStore("project", () => {
 
   function preparePieceAudioSource(project, piece) {
     if (piece.sources) return;
-    if (piece.type == "normal") {
+    if (!piece.type || piece.type == "normal") {
       piece.sources = [];
       for (let track of project.tracks) {
         let when = 0;
@@ -167,6 +175,9 @@ export const useProjectStore = defineStore("project", () => {
           }
         }
       }
+    } else if (piece.type == "delete") {
+      piece.sources = [];
+      piece.duration = 0;
     }
   }
   async function playParagraph(project, idx) {
@@ -181,7 +192,9 @@ export const useProjectStore = defineStore("project", () => {
         ...allsource,
         ...piece.sources.map((s) => ({ ...s, when: s.when + when })),
       ];
-      when += piece.frameEnd - piece.frameStart;
+      when += isNaN(piece.duration)
+        ? piece.frameEnd - piece.frameStart
+        : piece.duration;
     }
     play(allsource);
   }
@@ -234,7 +247,61 @@ export const useProjectStore = defineStore("project", () => {
     }
   }
 
-  function setTag(project, paragraphIdx, wordstart, wordend, tag) {
+  async function playWords(project, from, to) {
+    const buffer = await getWordsBuffer(project, from, to);
+    if (buffer) {
+      const ctx = new AudioContext();
+      let g = ctx.createGain();
+      g.gain.value = 1;
+      g.connect(ctx.destination);
+      const node = ctx.createBufferSource();
+      node.buffer = buffer;
+      node.connect(g);
+      node.start();
+    }
+  }
+
+  async function getWordsBuffer(project, from, to) {
+    await loadTracks(project);
+    const piece = {
+      frameStart: project.words[from].start,
+      frameEnd: project.words[to].end,
+    };
+    preparePieceAudioSource(project, piece);
+    // console.log(piece);
+    if (piece.sources.length) {
+      const offlineCtx = new OfflineAudioContext(
+        piece.sources[0].buffer.numberOfChannels,
+        piece.frameEnd - piece.frameStart + 1,
+        piece.sources[0].buffer.sampleRate
+      );
+      // const offlineCtx = new AudioContext();
+      const g = offlineCtx.createGain();
+      g.gain.value = 1;
+      g.connect(offlineCtx.destination);
+      const nodes = [];
+      console.log(piece.sources);
+      for (let src of piece.sources) {
+        const { when, offset, duration, buffer } = src;
+        const node = offlineCtx.createBufferSource();
+        node.buffer = buffer;
+        node.connect(g);
+        nodes.push({
+          when: when / buffer.sampleRate,
+          offset: offset / buffer.sampleRate,
+          duration: duration / buffer.sampleRate,
+          node,
+        });
+      }
+      for (let { when, offset, duration, node } of nodes) {
+        console.log("***** play", when, offset, duration, node);
+        node.start(when, offset, duration);
+      }
+      return await offlineCtx.startRendering();
+    }
+  }
+
+  async function setTag(project, paragraphIdx, wordstart, wordend, tag) {
     if (project.paragraphs[paragraphIdx].start > wordstart) return;
     if (project.paragraphs[paragraphIdx].end < wordend) return;
     for (let i = wordstart; i <= wordend; i++) {
@@ -245,6 +312,8 @@ export const useProjectStore = defineStore("project", () => {
       project.paragraphs[paragraphIdx].start,
       project.paragraphs[paragraphIdx].end
     );
+    saveWords(project);
+    saveParagraph(project);
   }
   load();
   return {
@@ -260,6 +329,8 @@ export const useProjectStore = defineStore("project", () => {
     playParagraph,
     getWordIndex,
     setTag,
+    getWordsBuffer,
+    playWords,
   };
 });
 

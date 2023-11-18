@@ -9,6 +9,7 @@ const store = useProjectStore()
 const route = useRoute()
 const paraRefs = ref(null)
 const project = ref(null);
+const doAdjust = ref(false)
 if (!store.list.length) {
     store.load().then(init)
 } else {
@@ -84,21 +85,37 @@ const selParagraph = ref(null)
 
 function setSelectionTag(paragraphIdx, tag) {
     if (selWordStart.value && selWordEnd.value) {
+        console.log('set selection to', tag)
         store.setTag(project.value, paragraphIdx, selWordStart.value, selWordEnd.value, tag)
     }
 }
 
-function pieceMouseup(paragraphIdx, piece) {
+function pieceMouseup() {
     const selection = getSelection()
-    if (selection.type == 'Range' && selection.baseNode.nodeValue == selection.extentNode.nodeValue) {
-        console.log(getSelection())
+    if (selection.type == 'Range') {
+        let nodeBase = selection.baseNode
+        if (nodeBase.nodeName !== 'SPAN') {
+            nodeBase = nodeBase.parentNode
+        }
+        if (nodeBase.nodeName !== 'SPAN') return;
+        let nodeExtent = selection.extentNode
+        if (nodeExtent.nodeName !== 'SPAN') {
+            nodeExtent = nodeExtent.parentNode
+        }
+        if (nodeExtent.nodeName !== 'SPAN') return;
+
+        const paragraphIdxBase = parseInt(nodeBase.getAttribute('data-paragraph'))
+        const paragraphIdxExtent = parseInt(nodeExtent.getAttribute('data-paragraph'))
+        if (paragraphIdxBase !== paragraphIdxExtent) return;
+        const pieceIdxBase = parseInt(nodeBase.getAttribute('data-piece'))
+        const pieceIdxExtent = parseInt(nodeExtent.getAttribute('data-piece'))
         const vbase = selection.baseOffset
+        const wordBase = store.getWordIndex(project.value, project.value.paragraphs[paragraphIdxBase].pieces[pieceIdxBase], vbase)
         const vextent = selection.extentOffset
-        const wordBase = store.getWordIndex(project.value, piece, vbase)
-        const wordExtent = store.getWordIndex(project.value, piece, vextent)
+        const wordExtent = store.getWordIndex(project.value, project.value.paragraphs[paragraphIdxExtent].pieces[pieceIdxExtent], vextent)
         selWordStart.value = Math.min(wordBase, wordExtent)
         selWordEnd.value = Math.max(wordBase, wordExtent)
-        selParagraph.value = paragraphIdx
+        selParagraph.value = paragraphIdxBase
     } else {
         selWordStart.value = null
         selWordEnd.value = null
@@ -114,7 +131,7 @@ function pieceMouseup(paragraphIdx, piece) {
             <div ref="paraRefs" v-for="(paragraph, idx) in project.paragraphs"
                 class="text-justify leading-relaxed p-2 focus:outline-none " :key="paragraph.start">
                 <ContextMenuRoot>
-                    <ContextMenuTrigger>
+                    <ContextMenuTrigger :disabled="!selWordEnd">
                         <div>
                             <span contenteditable @keydown="preventEnter" @blur="setComment($event, idx)"
                                 class="text-red-600 mr-2 px-1">
@@ -122,9 +139,9 @@ function pieceMouseup(paragraphIdx, piece) {
                             <Icon @click="store.playParagraph(project, idx)" icon="zondicons:play-outline"
                                 class="inline mr-2" />
                             <span>&nbsp;&nbsp;</span>
-                            <span v-for="piece in paragraph.pieces" :data-tag="piece.type || 'normal'"
-                                @mouseup="pieceMouseup(idx, piece)" @keydown="paragraphKeyDown($event, idx, piece)"
-                                tabindex="0"
+                            <span v-for="(piece, pidx) in paragraph.pieces" :data-paragraph="idx" :data-piece="pidx"
+                                :data-tag="piece.type || 'normal'" @mouseup="pieceMouseup"
+                                @keydown="paragraphKeyDown($event, idx, piece)" tabindex="0"
                                 class="focus:outline-none decoration-4 decoration-dashed data-[tag=delete]:line-through data-[tag=delete]:text-red-600">
                                 {{
                                     piece.text }} </span>
@@ -132,13 +149,23 @@ function pieceMouseup(paragraphIdx, piece) {
                     </ContextMenuTrigger>
                     <ContextMenuPortal>
                         <ContextMenuContent
-                            class=" min-w-[220px] z-30 bg-white outline-none rounded-md p-[5px] shadow-[0px_10px_38px_-10px_rgba(22,_23,_24,_0.35),_0px_10px_20px_-15px_rgba(22,_23,_24,_0.2)] will-change-[opacity,transform] data-[side=top]:animate-slideDownAndFade data-[side=right]:animate-slideLeftAndFade data-[side=bottom]:animate-slideUpAndFade data-[side=left]:animate-slideRightAndFade"
+                            class=" min-w-[100px] z-30 bg-white outline-none rounded-md p-[5px] shadow-[0px_10px_38px_-10px_rgba(22,_23,_24,_0.35),_0px_10px_20px_-15px_rgba(22,_23,_24,_0.2)] will-change-[opacity,transform] data-[side=top]:animate-slideDownAndFade data-[side=right]:animate-slideLeftAndFade data-[side=bottom]:animate-slideUpAndFade data-[side=left]:animate-slideRightAndFade"
                             :side-offset="5">
 
-                            <ContextMenuItem value="delete"
+                            <ContextMenuItem
                                 class="group text-[13px] leading-none  rounded-[3px] flex items-center h-[25px] px-[5px] relative pl-[25px] select-none outline-none  data-[disabled]:pointer-events-none data-[highlighted]:bg-green-600 data-[highlighted]:text-green-400"
                                 @click="setSelectionTag(idx, 'delete')">
                                 删除
+                            </ContextMenuItem>
+                            <ContextMenuItem
+                                class="group text-[13px] leading-none  rounded-[3px] flex items-center h-[25px] px-[5px] relative pl-[25px] select-none outline-none  data-[disabled]:pointer-events-none data-[highlighted]:bg-green-600 data-[highlighted]:text-green-400"
+                                @click="setSelectionTag(idx, 'normal')">
+                                正常
+                            </ContextMenuItem>
+                            <ContextMenuItem
+                                class="group text-[13px] leading-none  rounded-[3px] flex items-center h-[25px] px-[5px] relative pl-[25px] select-none outline-none  data-[disabled]:pointer-events-none data-[highlighted]:bg-green-600 data-[highlighted]:text-green-400"
+                                @click="doAdjust = true">
+                                调整
                             </ContextMenuItem>
                         </ContextMenuContent>
                     </ContextMenuPortal>
@@ -149,6 +176,28 @@ function pieceMouseup(paragraphIdx, piece) {
             <button @click="() => { store.stop(); store.stop = null }"
                 class="w-[70px] h-[70px] rounded-full border-2 hover:bg-gray-600 bg-gray-600/70 text-white">stop</button>
         </div>
+        <DialogRoot v-model:open="doAdjust">
+            <DialogPortal>
+                <DialogOverlay class="bg-blackA9 data-[state=open]:animate-overlayShow fixed inset-0 z-30" />
+                <DialogContent
+                    class="data-[state=open]:animate-contentShow fixed top-[50%] left-[50%] max-h-[85vh] w-[90vw] max-w-[640px] translate-x-[-50%] translate-y-[-50%] rounded-[6px] bg-white p-[25px] shadow-[hsl(206_22%_7%_/_35%)_0px_10px_38px_-10px,_hsl(206_22%_7%_/_20%)_0px_10px_20px_-15px] focus:outline-none z-[100]">
+                    <DialogTitle class="text-mauve12 m-0 text-[17px] font-semibold">
+                        片段精校
+                    </DialogTitle>
+                    <DialogDescription class="text-mauve11 mt-[10px] mb-5 text-[15px] leading-normal">
+                        拖拽单词以调整其发生位置.
+                    </DialogDescription>
+                    <fieldset class="mb-[15px] flex items-center gap-5">
+                        <WordAdjust :from="selWordStart" :to="selWordEnd" :projectid="project.id" />
+                    </fieldset>
+                    <DialogClose
+                        class="text-grass11 hover:bg-green4 focus:shadow-green7 absolute top-[10px] right-[10px] inline-flex h-[25px] w-[25px] appearance-none items-center justify-center rounded-full focus:shadow-[0_0_0_2px] focus:outline-none"
+                        aria-label="Close">
+                        <Icon icon="lucide:x" />
+                    </DialogClose>
+                </DialogContent>
+            </DialogPortal>
+        </DialogRoot>
     </div>
     <div class="fixed right-[20px] top-[20px]  ">
         <Draggable v-model="titlelist" item-key="title">
