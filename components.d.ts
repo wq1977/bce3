@@ -13,6 +13,7 @@ declare module 'vue' {
     ContextMenuItem: typeof import('radix-vue')['ContextMenuItem']
     ContextMenuPortal: typeof import('radix-vue')['ContextMenuPortal']
     ContextMenuRoot: typeof import('radix-vue')['ContextMenuRoot']
+    ContextMenuSeparator: typeof import('radix-vue')['ContextMenuSeparator']
     ContextMenuTrigger: typeof import('radix-vue')['ContextMenuTrigger']
     DialogClose: typeof import('radix-vue')['DialogClose']
     DialogContent: typeof import('radix-vue')['DialogContent']

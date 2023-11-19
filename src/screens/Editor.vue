@@ -175,7 +175,7 @@ function pieceMouseup(e) {
                             <span v-for="(piece, pidx) in paragraph.pieces" :data-paragraph="idx" :data-piece="pidx"
                                 :data-tag="piece.type || 'normal'" @mouseup="pieceMouseup"
                                 @keydown="paragraphKeyDown($event, idx, piece)" tabindex="0"
-                                class="focus:outline-none decoration-4 decoration-dashed data-[tag=delete]:line-through data-[tag=delete]:text-red-600">
+                                class="focus:outline-none decoration-4 decoration-dashed data-[tag=beep]:line-through data-[tag=beep]:decoration-wavy data-[tag=beep]:text-blue-600 data-[tag=delete]:line-through data-[tag=delete]:text-red-600">
                                 {{
                                     piece.text }} </span>
                         </div>
@@ -188,24 +188,31 @@ function pieceMouseup(e) {
                     class=" min-w-[100px] z-30 bg-white outline-none rounded-md p-[5px] shadow-[0px_10px_38px_-10px_rgba(22,_23,_24,_0.35),_0px_10px_20px_-15px_rgba(22,_23,_24,_0.2)] will-change-[opacity,transform] data-[side=top]:animate-slideDownAndFade data-[side=right]:animate-slideLeftAndFade data-[side=bottom]:animate-slideUpAndFade data-[side=left]:animate-slideRightAndFade"
                     :side-offset="5">
                     <ContextMenuItem
-                        class="group text-[13px] leading-none  rounded-[3px] flex items-center h-[25px] px-[5px] relative pl-[25px] select-none outline-none  data-[disabled]:pointer-events-none data-[highlighted]:bg-green-600 data-[highlighted]:text-green-400"
+                        class="group text-[13px] leading-none  rounded-[3px] flex items-center h-[25px] px-[5px] relative pl-[18px] select-none outline-none  data-[disabled]:pointer-events-none data-[highlighted]:bg-green-600 data-[highlighted]:text-green-400"
                         @click="playSelection()">
-                        播放
+                        <Icon icon="octicon:play-16" class="mr-2" /> 播放
                     </ContextMenuItem>
+                    <ContextMenuSeparator class="h-[1px] bg-green-300 m-[5px]" />
                     <ContextMenuItem
-                        class="group text-[13px] leading-none  rounded-[3px] flex items-center h-[25px] px-[5px] relative pl-[25px] select-none outline-none  data-[disabled]:pointer-events-none data-[highlighted]:bg-green-600 data-[highlighted]:text-green-400"
+                        class="group text-[13px] leading-none  rounded-[3px] flex items-center h-[25px] px-[5px] relative pl-[18px] select-none outline-none  data-[disabled]:pointer-events-none data-[highlighted]:bg-green-600 data-[highlighted]:text-green-400"
                         @click="setSelectionTag('delete')">
-                        删除
+                        <Icon icon="fa6-solid:xmarks-lines" class="mr-2" /> 删除
                     </ContextMenuItem>
                     <ContextMenuItem
-                        class="group text-[13px] leading-none  rounded-[3px] flex items-center h-[25px] px-[5px] relative pl-[25px] select-none outline-none  data-[disabled]:pointer-events-none data-[highlighted]:bg-green-600 data-[highlighted]:text-green-400"
+                        class="group text-[13px] leading-none  rounded-[3px] flex items-center h-[25px] px-[5px] relative pl-[18px] select-none outline-none  data-[disabled]:pointer-events-none data-[highlighted]:bg-green-600 data-[highlighted]:text-green-400"
                         @click="setSelectionTag('normal')">
-                        正常
+                        <Icon icon="fa-solid:grip-lines" class="mr-2" /> 正常
                     </ContextMenuItem>
                     <ContextMenuItem
-                        class="group text-[13px] leading-none  rounded-[3px] flex items-center h-[25px] px-[5px] relative pl-[25px] select-none outline-none  data-[disabled]:pointer-events-none data-[highlighted]:bg-green-600 data-[highlighted]:text-green-400"
+                        class="group text-[13px] leading-none  rounded-[3px] flex items-center h-[25px] px-[5px] relative pl-[18px] select-none outline-none  data-[disabled]:pointer-events-none data-[highlighted]:bg-green-600 data-[highlighted]:text-green-400"
+                        @click="setSelectionTag('beep')">
+                        <Icon icon="jam:mask-f" class="mr-2" /> 打码
+                    </ContextMenuItem>
+                    <ContextMenuSeparator class="h-[1px] bg-green-300 m-[5px]" />
+                    <ContextMenuItem
+                        class="group text-[13px] leading-none  rounded-[3px] flex items-center h-[25px] px-[5px] relative pl-[18px] select-none outline-none  data-[disabled]:pointer-events-none data-[highlighted]:bg-green-600 data-[highlighted]:text-green-400"
                         @click="adjustWords()">
-                        调整
+                        <Icon icon="carbon:settings-adjust" class="mr-2" /> 调整
                     </ContextMenuItem>
                 </ContextMenuContent>
             </ContextMenuPortal>

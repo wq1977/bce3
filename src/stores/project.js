@@ -3,6 +3,7 @@ import { defineStore } from "pinia";
 import toWav from "audiobuffer-to-wav";
 const PARAGRAPH_DELAY = 44100;
 
+let beepBuffer = null;
 function getTrackSource(track, idx, start, end) {
   //start 和 end 是全局的以帧为单位的开始和结束时间，比如 100, 200
   let frameskip = 0,
@@ -158,7 +159,17 @@ export const useProjectStore = defineStore("project", () => {
       saveParagraph(project);
     }
   }
+  async function buildBeepBuffer() {
+    const offlineCtx = new OfflineAudioContext(1, 100, 44100);
+    var oscillator = offlineCtx.createOscillator();
+    oscillator.type = "sine";
+    oscillator.frequency.value = 441;
+    oscillator.connect(offlineCtx.destination);
+    oscillator.start();
+    return await offlineCtx.startRendering();
+  }
   async function loadTracks(project) {
+    if (!beepBuffer) beepBuffer = await buildBeepBuffer();
     const context = new AudioContext();
     for (let track of project.tracks) {
       for (let idx = 0; idx < track.origin.length; idx++) {
@@ -202,6 +213,16 @@ export const useProjectStore = defineStore("project", () => {
     } else if (piece.type == "delete") {
       piece.sources = [];
       piece.duration = 0;
+    } else if (piece.type == "beep") {
+      piece.sources = [
+        {
+          buffer: beepBuffer,
+          when: 0,
+          offset: 0,
+          duration: piece.frameEnd - piece.frameStart,
+          loop: true,
+        },
+      ];
     }
   }
 
@@ -260,9 +281,10 @@ export const useProjectStore = defineStore("project", () => {
     let g = ctx.createGain();
     g.gain.value = 0.5;
     g.connect(ctx.destination);
-    const nodes = sources.map(({ when, offset, duration, buffer }) => {
+    const nodes = sources.map(({ when, offset, duration, buffer, loop }) => {
       const node = ctx.createBufferSource();
       node.buffer = buffer;
+      node.loop = !!loop;
       node.connect(g);
       return {
         when: when / buffer.sampleRate,
@@ -358,9 +380,10 @@ export const useProjectStore = defineStore("project", () => {
     g.connect(offlineCtx.destination);
     const nodes = [];
     for (let src of sources) {
-      const { when, offset, duration, buffer } = src;
+      const { when, offset, duration, buffer, loop } = src;
       const node = offlineCtx.createBufferSource();
       node.buffer = buffer;
+      node.loop = !!loop;
       node.connect(g);
       nodes.push({
         when: when / buffer.sampleRate,
