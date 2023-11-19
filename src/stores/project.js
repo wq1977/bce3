@@ -1,7 +1,7 @@
 import { ref, watch } from "vue";
 import { defineStore } from "pinia";
 import toWav from "audiobuffer-to-wav";
-const PARAGRAPH_DELAY = 44100;
+const PARAGRAPH_DELAY = 44100 * 3;
 
 let beepBuffer = null;
 function getTrackSource(track, idx, start, end) {

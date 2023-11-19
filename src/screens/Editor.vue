@@ -123,8 +123,9 @@ function pieceMouseup(e) {
     if (e.button != 0) return; //左键
     setTimeout(() => {
         const selection = getSelection()
+        console.log(selection)
         if (selection.type == 'Range') {
-            let nodeBase = selection.baseNode
+            let nodeBase = selection.anchorNode
             if (nodeBase.nodeName !== 'SPAN') {
                 nodeBase = nodeBase.parentNode
             }
@@ -140,7 +141,7 @@ function pieceMouseup(e) {
             if (paragraphIdxBase !== paragraphIdxExtent) return;
             const pieceIdxBase = parseInt(nodeBase.getAttribute('data-piece'))
             const pieceIdxExtent = parseInt(nodeExtent.getAttribute('data-piece'))
-            const vbase = selection.baseOffset
+            const vbase = selection.anchorOffset
             const wordBase = store.getWordIndex(project.value, project.value.paragraphs[paragraphIdxBase].pieces[pieceIdxBase], vbase)
             const vextent = selection.extentOffset
             const wordExtent = store.getWordIndex(project.value, project.value.paragraphs[paragraphIdxExtent].pieces[pieceIdxExtent], vextent)
