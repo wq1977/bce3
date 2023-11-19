@@ -161,10 +161,14 @@ export const useProjectStore = defineStore("project", () => {
   }
   async function buildBeepBuffer() {
     const offlineCtx = new OfflineAudioContext(1, 100, 44100);
+    let g = offlineCtx.createGain();
+    g.gain.value = 0.5;
+    g.connect(offlineCtx.destination);
+
     var oscillator = offlineCtx.createOscillator();
     oscillator.type = "sine";
     oscillator.frequency.value = 441;
-    oscillator.connect(offlineCtx.destination);
+    oscillator.connect(g);
     oscillator.start();
     return await offlineCtx.startRendering();
   }
