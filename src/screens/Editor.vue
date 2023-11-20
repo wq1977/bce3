@@ -160,23 +160,24 @@ function pieceMouseup(e) {
 </script>
 <template>
     <div v-if="project">
-        <h1>Editor -- {{ project.name }} <button @click="store.doExport(project)">导出</button></h1>
+        <div class="text-2xl font-black antialiased p-2">{{ project.name || project.id }}</div>
         <ContextMenuRoot :modal="false">
             <ContextMenuTrigger :disabled="!selWordEnd">
-                <div class="mr-[280px]">
+                <div class="mr-[320px]">
                     <div ref="paraRefs" v-for="(paragraph, idx) in project.paragraphs"
                         class="text-justify leading-relaxed p-2 focus:outline-none " :key="paragraph.start">
                         <div>
                             <span contenteditable @keydown="preventEnter" @blur="setComment($event, idx)"
-                                class="text-red-600 mr-2 px-1">
-                                {{ `${paragraph.comment || '无注释'}` }}</span>
+                                :data-used="!!paragraph.comment"
+                                class="font-black data-[used=true]:text-green-600 mr-2 px-1">
+                                {{ `${paragraph.comment || '未使用'}` }}</span>
                             <Icon @click="store.playParagraph(project, paragraph)" icon="zondicons:play-outline"
                                 class="inline mr-2" />
                             <span>&nbsp;&nbsp;</span>
                             <span v-for="(piece, pidx) in paragraph.pieces" :data-paragraph="idx" :data-piece="pidx"
                                 :data-tag="piece.type || 'normal'" @mouseup="pieceMouseup"
                                 @keydown="paragraphKeyDown($event, idx, piece)" tabindex="0"
-                                class="focus:outline-none decoration-4 decoration-dashed data-[tag=beep]:line-through data-[tag=beep]:decoration-wavy data-[tag=beep]:text-blue-600 data-[tag=delete]:line-through data-[tag=delete]:text-red-600">
+                                class="leading-loose focus:outline-none decoration-4 decoration-dashed data-[tag=beep]:line-through data-[tag=beep]:decoration-wavy data-[tag=beep]:text-blue-600 data-[tag=delete]:line-through data-[tag=delete]:text-red-600 antialiased">
                                 {{
                                     piece.text }} </span>
                         </div>
@@ -244,14 +245,20 @@ function pieceMouseup(e) {
                 </DialogContent>
             </DialogPortal>
         </DialogRoot>
-        <div class="fixed right-[20px] top-[20px]  ">
-            <Draggable v-model="titlelist" item-key="title">
-                <template #item="{ element }">
-                    <div @click="focusParagraph(element.index)"
-                        class="bg-gray-100 cursor-grab border-2 mb-1 rounded p-2 w-[240px] text-ellipsis overflow-hidden whitespace-nowrap">
-                        {{ element.duration }} {{ element.title }}</div>
-                </template>
-            </Draggable>
+        <div class="fixed right-[20px] top-[20px]  border-[1px] p-2 bg-gray-100">
+            <div class="text-lg p-2 text-gray-600 antialiased font-bold">故事大纲：</div>
+            <div class="max-h-[80vh] overflow-y-auto w-[300px]">
+                <Draggable v-model="titlelist" item-key="title">
+                    <template #item="{ element }">
+                        <div @click="focusParagraph(element.index)"
+                            class="text-sm bg-gray-100 cursor-grab border-2 mb-1 rounded p-2 text-ellipsis overflow-hidden whitespace-nowrap antialiased">
+                            <span class="font-mono font-thin text-gray-500"> {{ element.duration }} </span>
+                            &nbsp;
+                            <span class="font-bold">{{ element.title }} </span>
+                        </div>
+                    </template>
+                </Draggable>
+            </div>
         </div>
     </div>
 </template>

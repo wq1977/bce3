@@ -7,8 +7,6 @@ export {}
 
 declare module 'vue' {
   export interface GlobalComponents {
-    CheckboxIndicator: typeof import('radix-vue')['CheckboxIndicator']
-    CheckboxRoot: typeof import('radix-vue')['CheckboxRoot']
     ContextMenuContent: typeof import('radix-vue')['ContextMenuContent']
     ContextMenuItem: typeof import('radix-vue')['ContextMenuItem']
     ContextMenuPortal: typeof import('radix-vue')['ContextMenuPortal']
@@ -22,14 +20,7 @@ declare module 'vue' {
     DialogPortal: typeof import('radix-vue')['DialogPortal']
     DialogRoot: typeof import('radix-vue')['DialogRoot']
     DialogTitle: typeof import('radix-vue')['DialogTitle']
-    DialogTrigger: typeof import('radix-vue')['DialogTrigger']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
-    TooltipArrow: typeof import('radix-vue')['TooltipArrow']
-    TooltipContent: typeof import('radix-vue')['TooltipContent']
-    TooltipPortal: typeof import('radix-vue')['TooltipPortal']
-    TooltipProvider: typeof import('radix-vue')['TooltipProvider']
-    TooltipRoot: typeof import('radix-vue')['TooltipRoot']
-    TooltipTrigger: typeof import('radix-vue')['TooltipTrigger']
   }
 }
