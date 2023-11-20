@@ -169,7 +169,7 @@ function pieceMouseup(e) {
                         <div>
                             <span contenteditable @keydown="preventEnter" @blur="setComment($event, idx)"
                                 :data-used="!!paragraph.comment"
-                                class="font-black data-[used=true]:text-green-600 mr-2 px-1">
+                                class="font-black text-gray-300 data-[used=true]:text-green-600 mr-2 px-1">
                                 {{ `${paragraph.comment || '未使用'}` }}</span>
                             <Icon @click="store.playParagraph(project, paragraph)" icon="zondicons:play-outline"
                                 class="inline mr-2" />
