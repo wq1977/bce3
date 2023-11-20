@@ -7,8 +7,8 @@ import { useRoute } from 'vue-router';
 import { useProjectStore } from '../stores/project';
 const store = useProjectStore()
 const route = useRoute()
-const paraRefs = ref(null)
 const project = ref(null);
+const paraRefs = ref(null)
 const doAdjust = ref(false)
 if (!store.list.length) {
     store.load().then(init)

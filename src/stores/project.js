@@ -280,6 +280,52 @@ export const useProjectStore = defineStore("project", () => {
     }
     play(allsource);
   }
+  function playTracks(project, seek = 0) {
+    const sources = [];
+    let projectLength = 0;
+    for (let track of project.tracks) {
+      let trackLength = 0;
+      for (let origin of track.origin) {
+        trackLength += origin.buffer.length;
+      }
+      if (trackLength > projectLength) projectLength = trackLength;
+    }
+    seek = Math.round(seek * projectLength);
+    console.log("play in", seek, projectLength);
+
+    for (let track of project.tracks) {
+      let seekLeft = seek;
+      let when = 0;
+      for (let origin of track.origin) {
+        if (seekLeft > 0) {
+          const offset = seekLeft;
+          seekLeft -= origin.buffer.length;
+          if (seekLeft < 0) {
+            const duration = origin.buffer.length - offset;
+            seekLeft = 0;
+            sources.push({
+              when,
+              offset,
+              duration,
+              buffer: origin.buffer,
+            });
+            when += duration;
+          }
+        } else {
+          sources.push({
+            when,
+            offset: 0,
+            duration: origin.buffer.length,
+            buffer: origin.buffer,
+          });
+          when += origin.buffer.length;
+        }
+      }
+      if (when > projectLength) projectLength = when;
+    }
+    play(sources);
+  }
+
   function play(sources) {
     const ctx = new AudioContext();
     let g = ctx.createGain();
@@ -457,6 +503,8 @@ export const useProjectStore = defineStore("project", () => {
     updateParagraphsPieces,
     getParagraphDuration,
     doExport,
+    loadTracks,
+    playTracks,
   };
 });
 

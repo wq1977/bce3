@@ -1,3 +1,71 @@
+<script setup>
+import Draggable from 'vuedraggable'
+import { ref, computed, watch } from 'vue'
+import { useRoute } from 'vue-router';
+import { useProjectStore } from '../stores/project';
+
+const store = useProjectStore()
+const route = useRoute()
+const project = ref(null);
+if (!store.list.length) {
+    store.load().then(init)
+} else {
+    init()
+}
+async function init() {
+    project.value = store.list.filter(p => p.id == route.query.id)[0]
+    await store.prepare(project.value)
+    await store.loadTracks(project.value)
+}
+
+const total = computed(() => Math.max(...((project.value ? project.value.tracks : []) || []).map(t => t.origin.reduce((r, c) => r + (c.buffer ? c.buffer.length : 0), 0))))
+
+function clipwidth(clip) {
+    return clip.buffer ? (clip.buffer.length * 100 / total.value) : 0
+}
+
+const playProgress = ref([0])
+watch(playProgress, async () => {
+    if (store.stop) {
+        store.stop()
+        await new Promise(r => setTimeout(r, 200))
+        store.playTracks(project.value, playProgress.value / 100)
+    }
+})
+</script>
 <template>
-    Tracks
+    <div class="flex my-5">
+        <span class="w-[100px]"></span>
+        <SliderRoot v-model="playProgress"
+            class="relative p-2 flex-1 flex items-center select-none touch-none w-[200px] h-5" :max="100" :step="1">
+            <SliderTrack class="bg-gray-300 relative grow rounded-full h-[3px]">
+                <SliderRange class="absolute bg-pink-300 rounded-full h-full" />
+            </SliderTrack>
+            <SliderThumb
+                class="block w-5 h-5 bg-white shadow-[0_2px_10px] shadow-gray-700 rounded-[10px] hover:bg-violet-300 focus:outline-none "
+                aria-label="Volume" />
+        </SliderRoot>
+    </div>
+    <div v-for="track in project ? project.tracks : []" class="flex items-center ">
+        <span class="w-[100px]">{{ track.name }}</span>
+        <Draggable v-model="track.origin" group="trackclip" class="flex flex-1 items-center p-2" item-key="name">
+            <template #item="{ element }">
+                <div :style="{ width: `${clipwidth(element)}%` }"
+                    class="bg-gray-200 border border-gray-300 flex justify-center text-sm p-2 font-bold text-gray-500 cursor-grab">
+                    {{
+                        element.name }}
+                </div>
+            </template>
+        </Draggable>
+    </div>
+    <div class="mt-[50px] flex items-center justify-center">
+        <button
+            class="mr-2 w-[100px] h-[35px] bg-gray-200 text-blue-500 font-semibold hover:bg-gray-300 shadow-sm inline-flex  items-center justify-center rounded-[4px] px-[15px] leading-none outline-none transition-all">添加音轨</button>
+        <button
+            class="mr-2 w-[100px] h-[35px] bg-gray-200 text-blue-500 font-semibold hover:bg-gray-300 shadow-sm inline-flex  items-center justify-center rounded-[4px] px-[15px] leading-none outline-none transition-all">开始识别</button>
+        <button v-if="!store.stop" @click="store.playTracks(project, playProgress[0] / 100)"
+            class="mr-2 w-[100px] h-[35px] bg-gray-200 text-blue-500 font-semibold hover:bg-gray-300 shadow-sm inline-flex  items-center justify-center rounded-[4px] px-[15px] leading-none outline-none transition-all">播放</button>
+        <button v-else @click="() => { store.stop(); store.stop = null; }"
+            class="mr-2 w-[100px] h-[35px] bg-gray-200 text-blue-500 font-semibold hover:bg-gray-300 shadow-sm inline-flex  items-center justify-center rounded-[4px] px-[15px] leading-none outline-none transition-all">停止</button>
+    </div>
 </template>
