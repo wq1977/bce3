@@ -1,5 +1,6 @@
 import { ref, watch } from "vue";
 import { defineStore } from "pinia";
+import moment from "moment";
 import toWav from "audiobuffer-to-wav";
 
 const PARAGRAPH_DELAY = 44100 * 3;
@@ -113,30 +114,30 @@ export const useProjectStore = defineStore("project", () => {
       const enc = new TextDecoder("utf-8");
       const str = enc.decode(words);
       project.words = JSON.parse(str);
-    }
-    const paragraphs = await api.call(
-      "readfile",
-      project.id,
-      "paragraphs.json"
-    );
-    if (!paragraphs && project.words) {
-      project.paragraphs = [
-        {
-          start: 0,
-          end: words.length - 1,
-          comment: "",
-          pieces: words2pieces(project, 0, words.length - 1),
-        },
-      ];
-    } else {
-      const enc = new TextDecoder("utf-8");
-      const str = enc.decode(paragraphs);
-      project.paragraphs = JSON.parse(str);
-      project.paragraphs.forEach(
-        (p) => (p.pieces = words2pieces(project, p.start, p.end))
+      const paragraphs = await api.call(
+        "readfile",
+        project.id,
+        "paragraphs.json"
       );
+      if (!paragraphs && project.words) {
+        project.paragraphs = [
+          {
+            start: 0,
+            end: words.length - 1,
+            comment: "",
+            pieces: words2pieces(project, 0, words.length - 1),
+          },
+        ];
+      } else {
+        const enc = new TextDecoder("utf-8");
+        const str = enc.decode(paragraphs);
+        project.paragraphs = JSON.parse(str);
+        project.paragraphs.forEach(
+          (p) => (p.pieces = words2pieces(project, p.start, p.end))
+        );
+      }
+      console.log(project);
     }
-    console.log(project);
   }
   function splitParagraph(project, paragraphIdx, piece, position) {
     const wordidx = getWordIndex(project, piece, position);
@@ -536,6 +537,16 @@ export const useProjectStore = defineStore("project", () => {
       idx++;
     }
   }
+  function newProject() {
+    const id = moment().format("YYYYMMDDHHmmss");
+    list.value.push({
+      id,
+      name: "",
+      modified: new Date().getTime(),
+      tracks: [],
+    });
+    return id;
+  }
   load();
   return {
     list,
@@ -562,6 +573,7 @@ export const useProjectStore = defineStore("project", () => {
     loadTracks,
     playTracks,
     appendNewTracks,
+    newProject,
   };
 });
 
