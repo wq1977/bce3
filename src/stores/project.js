@@ -5,6 +5,8 @@ import toWav from "audiobuffer-to-wav";
 const PARAGRAPH_DELAY = 44100 * 3;
 
 let beepBuffer = null;
+const loading = ref(false);
+const playProgress = ref(0);
 function getTrackSource(track, idx, start, end) {
   //start 和 end 是全局的以帧为单位的开始和结束时间，比如 100, 200
   let frameskip = 0,
@@ -106,7 +108,6 @@ export const useProjectStore = defineStore("project", () => {
   // 加载Track,Words等
   async function prepare(project) {
     project.words = [];
-    project.loading = true;
     const words = await api.call("readfile", project.id, "words.json");
     if (words) {
       const enc = new TextDecoder("utf-8");
@@ -135,7 +136,6 @@ export const useProjectStore = defineStore("project", () => {
         (p) => (p.pieces = words2pieces(project, p.start, p.end))
       );
     }
-    project.loading = false;
     console.log(project);
   }
   function splitParagraph(project, paragraphIdx, piece, position) {
@@ -179,12 +179,14 @@ export const useProjectStore = defineStore("project", () => {
     for (let track of project.tracks) {
       for (let idx = 0; idx < track.origin.length; idx++) {
         if (!track.origin[idx].buffer) {
+          loading.value = true;
           const fileBuffer = await api.call(
             "readfile",
             project.id,
             track.origin[idx].path
           );
           const buffer = await context.decodeAudioData(fileBuffer.buffer);
+          loading.value = false;
           track.origin[idx].buffer = buffer;
         }
       }
@@ -345,9 +347,18 @@ export const useProjectStore = defineStore("project", () => {
       };
     });
     nodes.sort((a, b) => a.when + a.duration - b.when - b.duration);
+    const totalSecs =
+      nodes[nodes.length - 1].when + nodes[nodes.length - 1].duration;
+
     nodes.forEach(({ when, offset, duration, node }) => {
       node.start(when, offset, duration);
     });
+    function outputTimestamps() {
+      const ts = ctx.getOutputTimestamp();
+      playProgress.value = ts.contextTime / totalSecs;
+      rAF = requestAnimationFrame(outputTimestamps);
+    }
+    let rAF = requestAnimationFrame(outputTimestamps);
     nodes[nodes.length - 1].node.onended = function () {
       stop.value && stop.value();
       stop.value = null;
@@ -356,6 +367,7 @@ export const useProjectStore = defineStore("project", () => {
       nodes.forEach(({ node }) => {
         node.stop();
       });
+      cancelAnimationFrame(rAF);
     };
   }
   function getWordIndex(project, piece, position) {
@@ -487,12 +499,14 @@ export const useProjectStore = defineStore("project", () => {
     const decodeContext = new AudioContext();
     const audioBuffers = await Promise.all(
       [...files].map(async (file) => {
+        loading.value = true;
         const { path, buffer } = await api.call(
           "loadTrack",
           project.id,
           file.path
         );
         const audioBuffer = await decodeContext.decodeAudioData(buffer.buffer);
+        loading.value = false;
         return {
           name: file.name,
           path,
@@ -527,6 +541,8 @@ export const useProjectStore = defineStore("project", () => {
     list,
     load,
     stop,
+    loading,
+    playProgress,
     create,
     prepare,
     words2pieces,

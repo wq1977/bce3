@@ -24,13 +24,19 @@ function clipwidth(clip) {
     return clip.buffer ? (clip.buffer.length * 100 / total.value) : 0
 }
 
+const seek = ref(0)
 const playProgress = ref([0])
-watch(playProgress, async () => {
+async function setProgress() {
     if (store.stop) {
         store.stop()
         await new Promise(r => setTimeout(r, 200))
-        store.playTracks(project.value, playProgress.value / 100)
+        seek.value = playProgress.value / 100
+        store.playTracks(project.value, seek.value)
     }
+}
+
+watch(() => store.playProgress, async () => {
+    playProgress.value = [((seek.value || 0) + store.playProgress) * 100];
 })
 
 function onSelectFiles(e) {
@@ -41,7 +47,7 @@ function onSelectFiles(e) {
 <template>
     <div class="flex my-5">
         <span class="w-[100px]"></span>
-        <SliderRoot v-model="playProgress"
+        <SliderRoot v-model="playProgress" @update:modelValue="setProgress"
             class="relative p-2 flex-1 flex items-center select-none touch-none w-[200px] h-5" :max="100" :step="1">
             <SliderTrack class="bg-gray-300 relative grow rounded-full h-[3px]">
                 <SliderRange class="absolute bg-pink-300 rounded-full h-full" />
@@ -62,6 +68,11 @@ function onSelectFiles(e) {
                 </div>
             </template>
         </Draggable>
+    </div>
+    <div v-if="store.loading" class="mt-5 flex items-center justify-center h-[15px] rounded-lg ">
+        <div
+            class="px-[30vw] py-2 text-xs font-medium leading-none text-center text-blue-800 bg-blue-200 rounded-full animate-pulse">
+            loading...</div>
     </div>
     <div class="mt-[50px] flex items-center justify-center">
         <label for="track-selector">
