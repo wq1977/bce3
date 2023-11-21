@@ -32,6 +32,11 @@ watch(playProgress, async () => {
         store.playTracks(project.value, playProgress.value / 100)
     }
 })
+
+function onSelectFiles(e) {
+    store.appendNewTracks(project.value, e.target.files)
+}
+
 </script>
 <template>
     <div class="flex my-5">
@@ -59,8 +64,12 @@ watch(playProgress, async () => {
         </Draggable>
     </div>
     <div class="mt-[50px] flex items-center justify-center">
-        <button
-            class="mr-2 w-[100px] h-[35px] bg-gray-200 text-blue-500 font-semibold hover:bg-gray-300 shadow-sm inline-flex  items-center justify-center rounded-[4px] px-[15px] leading-none outline-none transition-all">添加音轨</button>
+        <label for="track-selector">
+            <span
+                class="mr-2 w-[100px] h-[35px] bg-gray-200 text-blue-500 font-semibold hover:bg-gray-300 shadow-sm inline-flex  items-center justify-center rounded-[4px] px-[15px] leading-none outline-none transition-all">添加音轨</span>
+            <input id="track-selector" class="hidden" @change="onSelectFiles" accept=".wav, .mp3, .m4a" multiple
+                type="file" />
+        </label>
         <button
             class="mr-2 w-[100px] h-[35px] bg-gray-200 text-blue-500 font-semibold hover:bg-gray-300 shadow-sm inline-flex  items-center justify-center rounded-[4px] px-[15px] leading-none outline-none transition-all">开始识别</button>
         <button v-if="!store.stop" @click="store.playTracks(project, playProgress[0] / 100)"

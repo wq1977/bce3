@@ -1,4 +1,5 @@
 const level = require("classic-level");
+const { createHash } = require("crypto");
 import createLogger from "./log";
 
 let db;
@@ -97,6 +98,26 @@ const api = {
         }
       });
     return projs;
+  },
+  async loadTrack(_, projname, path) {
+    if (!require("fs").existsSync(path)) {
+      throw new Error("not exists!");
+    }
+    const buff = require("fs").readFileSync(path);
+    const hash = createHash("md5").update(buff).digest("hex");
+    const trackPath = require("path").join(PROJ_BASE, projname, "tracks", hash);
+    if (require("fs").existsSync(trackPath)) {
+      throw new Error("dup track");
+    }
+    const dirname = require("path").dirname(trackPath);
+    if (!require("fs").existsSync(dirname)) {
+      require("fs").mkdirSync(dirname, { recursive: true });
+    }
+    require("fs").cpSync(path, trackPath);
+    return {
+      path: require("path").join("tracks", hash),
+      buffer: require("fs").readFileSync(trackPath),
+    };
   },
 };
 

@@ -1,6 +1,7 @@
 import { ref, watch } from "vue";
 import { defineStore } from "pinia";
 import toWav from "audiobuffer-to-wav";
+
 const PARAGRAPH_DELAY = 44100 * 3;
 
 let beepBuffer = null;
@@ -482,6 +483,45 @@ export const useProjectStore = defineStore("project", () => {
       project.paragraphs[idx].end
     );
   }
+  async function appendNewTracks(project, files) {
+    const decodeContext = new AudioContext();
+    const audioBuffers = await Promise.all(
+      [...files].map(async (file) => {
+        const { path, buffer } = await api.call(
+          "loadTrack",
+          project.id,
+          file.path
+        );
+        const audioBuffer = await decodeContext.decodeAudioData(buffer.buffer);
+        return {
+          name: file.name,
+          path,
+          buffer: audioBuffer,
+        };
+      })
+    );
+    let idx = 0;
+    if (!project.tracks) {
+      project.tracks = [
+        {
+          name: "track1",
+        },
+      ];
+    }
+    for (let audio of audioBuffers) {
+      const track = project.tracks[idx % project.tracks.length];
+      if (!track.origin) {
+        track.origin = [];
+      }
+      track.origin = [
+        ...track.origin,
+        {
+          ...audio,
+        },
+      ];
+      idx++;
+    }
+  }
   load();
   return {
     list,
@@ -505,6 +545,7 @@ export const useProjectStore = defineStore("project", () => {
     doExport,
     loadTracks,
     playTracks,
+    appendNewTracks,
   };
 });
 
