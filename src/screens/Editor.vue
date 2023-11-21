@@ -1,4 +1,5 @@
 <script setup>
+import { Icon } from '@iconify/vue'
 import { useRoute } from 'vue-router';
 const route = useRoute()
 </script>
@@ -36,8 +37,17 @@ const route = useRoute()
                     </RouterLink>
                 </NavigationMenuLink>
             </NavigationMenuItem>
-        </NavigationMenuList>
 
+            <NavigationMenuItem>
+                <NavigationMenuLink :data-active="route.path == '/editor/project'" as-child
+                    class="data-[active=true]:text-sky-600 text-gray-500 hover:bg-gray-100 focus:shadow-green-700 group flex select-none items-center justify-between gap-[2px] rounded-[4px] px-3 py-2 text-[15px] font-medium leading-none outline-none ">
+                    <RouterLink :to="`/`">
+                        <Icon icon="tabler:arrow-back" class="text-green-600" />
+                    </RouterLink>
+                </NavigationMenuLink>
+            </NavigationMenuItem>
+
+        </NavigationMenuList>
         <NavigationMenuViewport />
     </NavigationMenuRoot>
     <router-view></router-view>
