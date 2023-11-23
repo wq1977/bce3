@@ -35,7 +35,7 @@ async function handleAction() {
 <template>
     <div class="flex flex-wrap items-center justify-center bg-gradient-to-r from-teal-300 to-blue-500 p-8">
         <div v-for="proj in projStore.list.filter(p => p.tracks.length)"
-            @click="$router.push({ path: '/editor/paragraph', query: { id: proj.id } })"
+            @click="$router.push({ path: `/editor/${proj.words && proj.words.length ? 'paragraph' : 'track'}`, query: { id: proj.id } })"
             class="group relative border cursor-pointer rounded m-2 p-2 flex flex-col w-[200px]">
             <span @blur="setTitle($event, proj)" @click.stop="$event.target.focus()" contenteditable
                 class="mr-5 text-xl font-black text-ellipsis overflow-hidden truncate"> {{ proj.name || '未命名'

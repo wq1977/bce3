@@ -80,6 +80,9 @@ export const useProjectStore = defineStore("project", () => {
   });
   async function load() {
     list.value = await api.call("listProjects");
+    for (let proj of list.value) {
+      prepare(proj);
+    }
   }
   async function create() {}
   async function saveWords(project) {
