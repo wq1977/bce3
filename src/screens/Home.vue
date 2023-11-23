@@ -21,6 +21,12 @@ function createProject() {
     router.push(`/editor/track?id=${id}`)
 }
 
+async function setTitle(event, project) {
+    const text = event.target.textContent.trim()
+    project.name = text
+    await projStore.saveProject(project)
+}
+
 async function handleAction() {
     await projStore.deleteProject(toDelete)
 }
@@ -31,7 +37,10 @@ async function handleAction() {
         <div v-for="proj in projStore.list.filter(p => p.tracks.length)"
             @click="$router.push({ path: '/editor/paragraph', query: { id: proj.id } })"
             class="group relative border cursor-pointer rounded m-2 p-2 flex flex-col w-[200px]">
-            <span class="text-xl font-black"> {{ proj.name || '未命名' }} </span>
+            <span @blur="setTitle($event, proj)" @click.stop="$event.target.focus()" contenteditable
+                class="mr-5 text-xl font-black text-ellipsis overflow-hidden truncate"> {{ proj.name || '未命名'
+                }}
+            </span>
             <span class="text-xs mt-1 text-gray-600">ID: {{ proj.id }}</span>
             <span class="text-xs text-right mt-5 text-gray-500">{{ fmtDate(proj.modified) }}</span>
             <Icon @click.stop="doDelete(proj)" icon="fluent:delete-12-regular"
