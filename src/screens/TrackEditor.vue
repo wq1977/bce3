@@ -21,6 +21,7 @@ async function init() {
 const total = computed(() => Math.max(...((project.value ? project.value.tracks : []) || []).map(t => t.origin.reduce((r, c) => r + (c.buffer ? c.buffer.length : 0), 0))))
 
 function clipwidth(clip) {
+    console.log('total', total.value, 'clip:', clip.name, clip.buffer.length)
     return clip.buffer ? (clip.buffer.length * 100 / total.value) : 0
 }
 
@@ -61,7 +62,7 @@ function onSelectFiles(e) {
         <span class="w-[100px]">{{ track.name }}</span>
         <Draggable v-model="track.origin" group="trackclip" class="flex flex-1 items-center p-2" item-key="name">
             <template #item="{ element }">
-                <div :style="{ width: `${clipwidth(element)}%` }"
+                <div v-if="element.buffer" :style="{ width: `${clipwidth(element)}%` }"
                     class="bg-gray-200 border border-gray-300 flex justify-center text-sm p-2 font-bold text-gray-500 cursor-grab">
                     {{
                         element.name }}

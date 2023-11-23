@@ -1,3 +1,4 @@
+const { shell } = require("electron");
 const level = require("classic-level");
 const { createHash } = require("crypto");
 import createLogger from "./log";
@@ -98,6 +99,10 @@ const api = {
         }
       });
     return projs;
+  },
+  async deleteProject(_, id) {
+    const projBase = require("path").join(PROJ_BASE, id);
+    await shell.trashItem(projBase);
   },
   async loadTrack(_, projname, path) {
     if (!require("fs").existsSync(path)) {

@@ -516,7 +516,7 @@ export const useProjectStore = defineStore("project", () => {
       })
     );
     let idx = 0;
-    if (!project.tracks) {
+    if (!project.tracks || !project.tracks.length) {
       project.tracks = [
         {
           name: "track1",
@@ -536,6 +536,7 @@ export const useProjectStore = defineStore("project", () => {
       ];
       idx++;
     }
+    await saveProject(project);
   }
   function newProject() {
     const id = moment().format("YYYYMMDDHHmmss");
@@ -546,6 +547,22 @@ export const useProjectStore = defineStore("project", () => {
       tracks: [],
     });
     return id;
+  }
+  async function deleteProject(project) {
+    await api.call("deleteProject", project.id);
+    list.value = list.value.filter((p) => p.id != project.id);
+  }
+  async function saveProject(project) {
+    const { words, paragraphs, ...others } = project;
+    const json = JSON.parse(JSON.stringify(others));
+    for (let track of json.tracks || []) {
+      for (let origin of track.origin) {
+        if (origin.buffer) {
+          delete origin.buffer;
+        }
+      }
+    }
+    await api.call("save2file", project.id, "proj.json", json);
   }
   load();
   return {
@@ -574,6 +591,8 @@ export const useProjectStore = defineStore("project", () => {
     playTracks,
     appendNewTracks,
     newProject,
+    deleteProject,
+    saveProject,
   };
 });
 
