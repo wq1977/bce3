@@ -114,7 +114,6 @@ function playSelection() {
 
 function setSelectionTag(tag) {
     if (selWordStart.value && selWordEnd.value) {
-        console.log('set selection to', tag)
         store.setTag(project.value, selParagraph.value, selWordStart.value, selWordEnd.value, tag)
     }
 }
@@ -123,7 +122,6 @@ function pieceMouseup(e) {
     if (e.button != 0) return; //左键
     setTimeout(() => {
         const selection = getSelection()
-        console.log(selection)
         if (selection.type == 'Range') {
             let nodeBase = selection.anchorNode
             if (nodeBase.nodeName !== 'SPAN') {

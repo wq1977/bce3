@@ -89,7 +89,7 @@ function onSelectFiles(e) {
             <input id="track-selector" class="hidden" @change="onSelectFiles" accept=".wav, .mp3, .m4a" multiple
                 type="file" />
         </label>
-        <button
+        <button @click="store.recognition(project)"
             class="mr-2 w-[100px] h-[35px] bg-gray-200 text-blue-500 font-semibold hover:bg-gray-300 shadow-sm inline-flex  items-center justify-center rounded-[4px] px-[15px] leading-none outline-none transition-all">开始识别</button>
         <button v-if="!store.stop" @click="store.playTracks(project, playProgress[0] / 100)"
             class="mr-2 w-[100px] h-[35px] bg-gray-200 text-blue-500 font-semibold hover:bg-gray-300 shadow-sm inline-flex  items-center justify-center rounded-[4px] px-[15px] leading-none outline-none transition-all">播放</button>

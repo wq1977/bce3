@@ -287,8 +287,8 @@ export const useProjectStore = defineStore("project", () => {
     }
     play(allsource);
   }
-  function playTracks(project, seek = 0) {
-    const sources = [];
+
+  function projectFrameLen(project) {
     let projectLength = 0;
     for (let track of project.tracks) {
       let trackLength = 0;
@@ -297,9 +297,14 @@ export const useProjectStore = defineStore("project", () => {
       }
       if (trackLength > projectLength) projectLength = trackLength;
     }
-    seek = Math.round(seek * projectLength);
-    console.log("play in", seek, projectLength);
+    return projectLength;
+  }
 
+  function playTracks(project, seek = 0, ctx = null) {
+    const projectLength = projectFrameLen(project);
+    seek = Math.ceil(seek * projectLength);
+
+    const sources = [];
     for (let track of project.tracks) {
       let seekLeft = seek;
       let when = 0;
@@ -330,11 +335,13 @@ export const useProjectStore = defineStore("project", () => {
       }
       if (when > projectLength) projectLength = when;
     }
-    play(sources);
+    play(sources, ctx);
   }
 
-  function play(sources) {
-    const ctx = new AudioContext();
+  function play(sources, ctx) {
+    if (!ctx) {
+      ctx = new AudioContext();
+    }
     let g = ctx.createGain();
     g.gain.value = 0.5;
     g.connect(ctx.destination);
@@ -358,8 +365,8 @@ export const useProjectStore = defineStore("project", () => {
       node.start(when, offset, duration);
     });
     function outputTimestamps() {
-      const ts = ctx.getOutputTimestamp();
-      playProgress.value = ts.contextTime / totalSecs;
+      const ts = ctx.currentTime;
+      playProgress.value = ts / totalSecs;
       rAF = requestAnimationFrame(outputTimestamps);
     }
     let rAF = requestAnimationFrame(outputTimestamps);
@@ -567,7 +574,62 @@ export const useProjectStore = defineStore("project", () => {
     }
     await api.call("save2file", project.id, "proj.json", json);
   }
+  function formatWords(s2t, lenlimit) {
+    // 将所有的时间转换成整数(frame position)的格式
+    // 将所有的时间分配给每个word，如果中间不连续需要插入连接符
+    // word的frame应该不包括end
+    const words = [];
+    let framePos = 0;
+    for (let segment of s2t.segments) {
+      for (let word of segment.words) {
+        const frameStart = Math.round(word.start * 44100);
+        const frameEnd = Math.round(word.end * 44100);
+        if (frameStart > framePos) {
+          words.push({
+            start: framePos,
+            end: frameStart,
+            word: "⟷",
+          });
+        } else if (frameStart < framePos || frameEnd < frameStart) {
+          continue;
+        }
+        words.push({
+          start: frameStart,
+          end: frameEnd,
+          word: word.word,
+        });
+        framePos = frameEnd;
+      }
+      words.push({
+        start: framePos,
+        end: framePos,
+        word: ",",
+      });
+    }
+    if (framePos < lenlimit) {
+      words.push({
+        start: framePos,
+        end: lenlimit,
+        word: "⟷",
+      });
+    }
+    return words;
+  }
+  async function recognition(project) {
+    let screenLock = await navigator.wakeLock.request("screen");
+    const lenlimit = projectFrameLen(project);
+    const offlineCtx = new OfflineAudioContext(1, lenlimit, 44100);
+    playTracks(project, 0, offlineCtx);
+    const buffer = await offlineCtx.startRendering();
+    const s2t = await api.call("recognition", project.id, toWav(buffer));
+    project.words = formatWords(s2t, lenlimit);
+    await saveWords(project);
+    screenLock.release();
+  }
   load();
+  api.on("recognition-progress", "project-store", function () {
+    console.log("recognition-progress", arguments);
+  });
   return {
     list,
     load,
@@ -596,6 +658,7 @@ export const useProjectStore = defineStore("project", () => {
     newProject,
     deleteProject,
     saveProject,
+    recognition,
   };
 });
 

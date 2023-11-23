@@ -121,6 +121,62 @@ const api = {
       buffer: require("fs").readFileSync(trackPath),
     };
   },
+  recognition(event, proj, buffer) {
+    const tmppath = require("path").join(
+      PROJ_BASE,
+      proj,
+      "__recognition__.wav"
+    );
+    require("fs").writeFileSync(tmppath, Buffer.from(buffer));
+    const { spawn } = require("node:child_process");
+    let appRoot = RESOURCE_ROOT;
+    if (RESOURCE_ROOT.endsWith("app.asar")) {
+      appRoot += ".unpacked";
+    }
+    const python = require("path").join(
+      appRoot,
+      "whisper",
+      process.platform === "win32" ? "work.exe" : "work/work"
+    );
+    let model = require("path").join(appRoot, "whisper", "models", "base");
+    model = model.replace(/\\/g, "/");
+    const target = tmppath;
+    const cp = spawn(python, [model, target], {
+      env: {
+        OMP_NUM_THREADS: Math.max(1, require("os").cpus.length - 1),
+      },
+    });
+    let result = "";
+    return new Promise((resolve) => {
+      cp.stdout.on("data", (data) => {
+        result += `${data}`;
+      });
+      cp.stderr.on("data", (data) => {
+        const lines = `${data}`.split("\n");
+        for (let line of lines) {
+          if (!line.trim()) continue;
+          try {
+            const p = JSON.parse(line);
+            event.sender.send("recognition-progress", p);
+          } catch (err) {
+            console.log(err, line);
+          }
+        }
+      });
+      cp.on("close", (code) => {
+        const lines = result.split("\n");
+        for (let l of lines) {
+          try {
+            resolve(JSON.parse(l));
+            return;
+          } catch (err) {
+            console.log(result);
+          }
+        }
+        resolve();
+      });
+    });
+  },
 };
 
 export default api;
