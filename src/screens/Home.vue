@@ -6,11 +6,16 @@ import moment from 'moment'
 import { Icon } from '@iconify/vue';
 const projStore = useProjectStore();
 const router = useRouter()
+const titleRefs = ref({})
 const deleteConfirm = ref(false)
 let toDelete = null
 function doDelete(proj) {
     deleteConfirm.value = true
     toDelete = proj
+}
+
+function setTitleRef(el, id) {
+    titleRefs.value[id] = el
 }
 
 function fmtDate(ts) {
@@ -27,6 +32,15 @@ async function setTitle(event, project) {
     await projStore.saveProject(project)
 }
 
+function editTitle(id) {
+    titleRefs.value[id].focus()
+    const selection = window.getSelection();
+    const range = document.createRange();
+    range.selectNodeContents(titleRefs.value[id]);
+    selection.removeAllRanges();
+    selection.addRange(range);
+}
+
 async function handleAction() {
     await projStore.deleteProject(toDelete)
 }
@@ -37,7 +51,7 @@ async function handleAction() {
         <div v-for="proj in projStore.list.filter(p => p.tracks.length)"
             @click="$router.push({ path: `/editor/${proj.words && proj.words.length ? 'paragraph' : 'track'}`, query: { id: proj.id } })"
             class="group relative border cursor-pointer rounded m-2 p-2 flex flex-col w-[200px]">
-            <span @blur="setTitle($event, proj)" @click.stop="$event.target.focus()" contenteditable
+            <span @blur="setTitle($event, proj)" :ref="el => setTitleRef(el, proj.id)" contenteditable
                 class="mr-5 text-xl font-black text-ellipsis overflow-hidden truncate"> {{ proj.name || '未命名'
                 }}
             </span>
@@ -45,6 +59,8 @@ async function handleAction() {
             <span class="text-xs text-right mt-5 text-gray-500">{{ fmtDate(proj.modified) }}</span>
             <Icon @click.stop="doDelete(proj)" icon="fluent:delete-12-regular"
                 class="group-hover:inline hidden absolute right-1 top-1 text-gray-300 hover:text-gray-500" />
+            <Icon @click.stop="editTitle(proj.id)" icon="akar-icons:edit"
+                class="group-hover:inline hidden absolute right-1 top-[25px] text-gray-300 hover:text-gray-500" />
         </div>
     </div>
     <div class="flex justify-center p-5">

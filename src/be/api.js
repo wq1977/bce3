@@ -111,9 +111,6 @@ const api = {
     const buff = require("fs").readFileSync(path);
     const hash = createHash("md5").update(buff).digest("hex");
     const trackPath = require("path").join(PROJ_BASE, projname, "tracks", hash);
-    if (require("fs").existsSync(trackPath)) {
-      throw new Error("dup track");
-    }
     const dirname = require("path").dirname(trackPath);
     if (!require("fs").existsSync(dirname)) {
       require("fs").mkdirSync(dirname, { recursive: true });

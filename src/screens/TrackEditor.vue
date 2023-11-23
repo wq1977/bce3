@@ -1,4 +1,5 @@
 <script setup>
+import { Icon } from '@iconify/vue';
 import Draggable from 'vuedraggable'
 import { ref, computed, watch } from 'vue'
 import { useRoute } from 'vue-router';
@@ -21,8 +22,12 @@ async function init() {
 const total = computed(() => Math.max(...((project.value ? project.value.tracks : []) || []).map(t => t.origin.reduce((r, c) => r + (c.buffer ? c.buffer.length : 0), 0))))
 
 function clipwidth(clip) {
-    console.log('total', total.value, 'clip:', clip.name, clip.buffer.length)
     return clip.buffer ? (clip.buffer.length * 100 / total.value) : 0
+}
+
+function deleteBuffer(proj, track, buffer) {
+    track.origin = track.origin.filter(o => o != buffer)
+    store.saveProject(proj)
 }
 
 const seek = ref(0)
@@ -63,9 +68,11 @@ function onSelectFiles(e) {
         <Draggable v-model="track.origin" group="trackclip" class="flex flex-1 items-center p-2" item-key="name">
             <template #item="{ element }">
                 <div v-if="element.buffer" :style="{ width: `${clipwidth(element)}%` }"
-                    class="bg-gray-200 border border-gray-300 flex justify-center text-sm p-2 font-bold text-gray-500 cursor-grab">
+                    class="group relative bg-gray-200 border border-gray-300 flex justify-center text-sm p-2 font-bold text-gray-500 cursor-grab">
                     {{
                         element.name }}
+                    <Icon @click.stop="deleteBuffer(project, track, element)" icon="fluent:delete-12-regular"
+                        class="group-hover:inline hidden absolute text-lg right-1 top-1 text-blue-300 hover:text-blue-500" />
                 </div>
             </template>
         </Draggable>
