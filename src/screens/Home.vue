@@ -30,12 +30,12 @@ async function handleAction() {
     <div class="flex flex-wrap items-center justify-center bg-gradient-to-r from-teal-300 to-blue-500 p-8">
         <div v-for="proj in projStore.list.filter(p => p.tracks.length)"
             @click="$router.push({ path: '/editor/paragraph', query: { id: proj.id } })"
-            class="relative border cursor-pointer rounded m-2 p-2 flex flex-col w-[200px]">
+            class="group relative border cursor-pointer rounded m-2 p-2 flex flex-col w-[200px]">
             <span class="text-xl font-black"> {{ proj.name || '未命名' }} </span>
             <span class="text-xs mt-1 text-gray-600">ID: {{ proj.id }}</span>
             <span class="text-xs text-right mt-5 text-gray-500">{{ fmtDate(proj.modified) }}</span>
             <Icon @click.stop="doDelete(proj)" icon="fluent:delete-12-regular"
-                class="absolute right-1 top-1 text-gray-300 hover:text-gray-500" />
+                class="group-hover:inline hidden absolute right-1 top-1 text-gray-300 hover:text-gray-500" />
         </div>
     </div>
     <div class="flex justify-center p-5">
