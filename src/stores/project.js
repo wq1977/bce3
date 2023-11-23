@@ -293,7 +293,7 @@ export const useProjectStore = defineStore("project", () => {
     for (let track of project.tracks) {
       let trackLength = 0;
       for (let origin of track.origin) {
-        trackLength += origin.buffer.length;
+        trackLength += origin.buffer ? origin.buffer.length : 0;
       }
       if (trackLength > projectLength) projectLength = trackLength;
     }
@@ -615,7 +615,9 @@ export const useProjectStore = defineStore("project", () => {
     }
     return words;
   }
+  const recognitionProgress = ref(-1);
   async function recognition(project) {
+    recognitionProgress.value = 0;
     let screenLock = await navigator.wakeLock.request("screen");
     const lenlimit = projectFrameLen(project);
     const offlineCtx = new OfflineAudioContext(1, lenlimit, 44100);
@@ -625,10 +627,11 @@ export const useProjectStore = defineStore("project", () => {
     project.words = formatWords(s2t, lenlimit);
     await saveWords(project);
     screenLock.release();
+    recognitionProgress.value = -1;
   }
   load();
-  api.on("recognition-progress", "project-store", function () {
-    console.log("recognition-progress", arguments);
+  api.on("recognition-progress", "project-store", function (p) {
+    recognitionProgress.value = p.end / p.duration;
   });
   return {
     list,
@@ -636,6 +639,7 @@ export const useProjectStore = defineStore("project", () => {
     stop,
     loading,
     playProgress,
+    recognitionProgress,
     create,
     prepare,
     words2pieces,
@@ -659,6 +663,7 @@ export const useProjectStore = defineStore("project", () => {
     deleteProject,
     saveProject,
     recognition,
+    projectFrameLen,
   };
 });
 

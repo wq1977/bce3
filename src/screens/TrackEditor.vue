@@ -2,11 +2,12 @@
 import { Icon } from '@iconify/vue';
 import Draggable from 'vuedraggable'
 import { ref, computed, watch } from 'vue'
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { useProjectStore } from '../stores/project';
 
 const store = useProjectStore()
 const route = useRoute()
+const router = useRouter()
 const project = ref(null);
 if (!store.list.length) {
     store.load().then(init)
@@ -49,6 +50,13 @@ function onSelectFiles(e) {
     store.appendNewTracks(project.value, e.target.files)
 }
 
+async function doRecognition() {
+    await store.recognition(project.value)
+    if (project.value.words && project.value.words.length) {
+        router.push(`/editor/paragraph?id=${project.value.id}`)
+    }
+}
+
 </script>
 <template>
     <div class="flex my-5">
@@ -82,18 +90,24 @@ function onSelectFiles(e) {
             class="px-[30vw] py-2 text-xs font-medium leading-none text-center text-blue-800 bg-blue-200 rounded-full animate-pulse">
             loading...</div>
     </div>
+    <div v-else-if="store.recognitionProgress >= 0" class="mt-5 flex items-center justify-center h-[15px] rounded-lg ">
+        <div
+            class="px-[30vw] py-2 text-xs font-medium leading-none text-center text-blue-800 bg-blue-200 rounded-full animate-pulse">
+            正在识别 {{ (store.recognitionProgress * 100).toFixed(2) }} % ... </div>
+    </div>
     <div class="mt-[50px] flex items-center justify-center">
         <label for="track-selector">
-            <span
-                class="mr-2 w-[100px] h-[35px] bg-gray-200 text-blue-500 font-semibold hover:bg-gray-300 shadow-sm inline-flex  items-center justify-center rounded-[4px] px-[15px] leading-none outline-none transition-all">添加音轨</span>
-            <input id="track-selector" class="hidden" @change="onSelectFiles" accept=".wav, .mp3, .m4a" multiple
-                type="file" />
+            <span :data-disabled="store.recognitionProgress >= 0"
+                class="data-[disabled=true]:text-gray-300 data-[disabled=true]:hover:bg-gray-200 mr-2 w-[100px] h-[35px] bg-gray-200 text-blue-500 font-semibold hover:bg-gray-300 shadow-sm inline-flex  items-center justify-center rounded-[4px] px-[15px] leading-none outline-none transition-all">添加音轨</span>
+            <input id="track-selector" :disabled="store.recognitionProgress >= 0" class="hidden" @change="onSelectFiles"
+                accept=".wav, .mp3, .m4a" multiple type="file" />
         </label>
-        <button @click="store.recognition(project)"
-            class="mr-2 w-[100px] h-[35px] bg-gray-200 text-blue-500 font-semibold hover:bg-gray-300 shadow-sm inline-flex  items-center justify-center rounded-[4px] px-[15px] leading-none outline-none transition-all">开始识别</button>
-        <button v-if="!store.stop" @click="store.playTracks(project, playProgress[0] / 100)"
-            class="mr-2 w-[100px] h-[35px] bg-gray-200 text-blue-500 font-semibold hover:bg-gray-300 shadow-sm inline-flex  items-center justify-center rounded-[4px] px-[15px] leading-none outline-none transition-all">播放</button>
-        <button v-else @click="() => { store.stop(); store.stop = null; }"
-            class="mr-2 w-[100px] h-[35px] bg-gray-200 text-blue-500 font-semibold hover:bg-gray-300 shadow-sm inline-flex  items-center justify-center rounded-[4px] px-[15px] leading-none outline-none transition-all">停止</button>
+        <button @click="doRecognition" :disabled="store.recognitionProgress >= 0 || store.projectFrameLen(project) <= 0"
+            class="disabled:text-gray-300 disabled:hover:bg-gray-200 mr-2 w-[100px] h-[35px] bg-gray-200 text-blue-500 font-semibold hover:bg-gray-300 shadow-sm inline-flex  items-center justify-center rounded-[4px] px-[15px] leading-none outline-none transition-all">开始识别</button>
+        <button :disabled="store.recognitionProgress >= 0 || store.projectFrameLen(project) <= 0" v-if="!store.stop"
+            @click="store.playTracks(project, playProgress[0] / 100)"
+            class="disabled:text-gray-300 disabled:hover:bg-gray-200 mr-2 w-[100px] h-[35px] bg-gray-200 text-blue-500 font-semibold hover:bg-gray-300 shadow-sm inline-flex  items-center justify-center rounded-[4px] px-[15px] leading-none outline-none transition-all">播放</button>
+        <button :disabled="store.recognitionProgress >= 0" v-else @click="() => { store.stop(); store.stop = null; }"
+            class="disabled:text-gray-300 disabled:hover:bg-gray-200 mr-2 w-[100px] h-[35px] bg-gray-200 text-blue-500 font-semibold hover:bg-gray-300 shadow-sm inline-flex  items-center justify-center rounded-[4px] px-[15px] leading-none outline-none transition-all">停止</button>
     </div>
 </template>
