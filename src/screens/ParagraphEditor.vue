@@ -111,16 +111,26 @@ function pieceMouseup(e) {
             if (nodeBase.nodeName !== 'SPAN') {
                 nodeBase = nodeBase.parentNode
             }
-            if (nodeBase.nodeName !== 'SPAN') return;
+            if (nodeBase.nodeName !== 'SPAN') {
+                console.log('select test, base is not span', nodeBase)
+                return
+            }
             let nodeExtent = selection.extentNode
             if (nodeExtent.nodeName !== 'SPAN') {
                 nodeExtent = nodeExtent.parentNode
             }
-            if (nodeExtent.nodeName !== 'SPAN') return;
+            if (nodeExtent.nodeName !== 'SPAN') {
+                console.log('select test, extent is not span', nodeExtent)
+                return
+
+            }
 
             const paragraphIdxBase = parseInt(nodeBase.getAttribute('data-paragraph'))
             const paragraphIdxExtent = parseInt(nodeExtent.getAttribute('data-paragraph'))
-            if (paragraphIdxBase !== paragraphIdxExtent) return;
+            if (paragraphIdxBase !== paragraphIdxExtent) {
+                console.log('not same paragraph', paragraphIdxBase, paragraphIdxExtent)
+                return
+            }
             const pieceIdxBase = parseInt(nodeBase.getAttribute('data-piece'))
             const pieceIdxExtent = parseInt(nodeExtent.getAttribute('data-piece'))
             const vbase = selection.anchorOffset
@@ -130,6 +140,7 @@ function pieceMouseup(e) {
             selWordStart.value = Math.min(wordBase, wordExtent)
             selWordEnd.value = Math.max(wordBase, wordExtent)
             selParagraph.value = paragraphIdxBase
+            console.log('select change:', paragraphIdxBase, selWordStart.value, selWordEnd.value)
         } else {
             selWordStart.value = null
             selWordEnd.value = null
@@ -159,7 +170,7 @@ function pieceMouseup(e) {
                             <span v-for="(piece, pidx) in paragraph.pieces" :data-paragraph="idx" :data-piece="pidx"
                                 :data-tag="piece.type || 'normal'" @mouseup="pieceMouseup"
                                 @keydown="paragraphKeyDown($event, idx, piece)" tabindex="0"
-                                class="leading-loose focus:outline-none decoration-4 decoration-dashed data-[tag=beep]:line-through data-[tag=beep]:decoration-wavy data-[tag=beep]:text-blue-600 data-[tag=delete]:line-through data-[tag=delete]:text-red-600 antialiased">
+                                class="leading-loose focus:outline-none decoration-4 decoration-dashed data-[tag=beep]:line-through data-[tag=hot]:font-bold data-[tag=hot]:text-yellow-500 data-[tag=beep]:decoration-wavy data-[tag=beep]:text-blue-600 data-[tag=delete]:line-through data-[tag=delete]:text-red-600 antialiased">
                                 {{
                                     piece.text }} </span>
                         </div>
@@ -191,6 +202,11 @@ function pieceMouseup(e) {
                         class="group text-[13px] leading-none  rounded-[3px] flex items-center h-[25px] px-[5px] relative pl-[18px] select-none outline-none  data-[disabled]:pointer-events-none data-[highlighted]:bg-green-600 data-[highlighted]:text-green-400"
                         @click="setSelectionTag('beep')">
                         <Icon icon="jam:mask-f" class="mr-2" /> 打码
+                    </ContextMenuItem>
+                    <ContextMenuItem
+                        class="group text-[13px] leading-none  rounded-[3px] flex items-center h-[25px] px-[5px] relative pl-[18px] select-none outline-none  data-[disabled]:pointer-events-none data-[highlighted]:bg-green-600 data-[highlighted]:text-green-400"
+                        @click="setSelectionTag('hot')">
+                        <Icon icon="jam:mask-f" class="mr-2" /> 金句
                     </ContextMenuItem>
                     <ContextMenuSeparator class="h-[1px] bg-green-300 m-[5px]" />
                     <ContextMenuItem

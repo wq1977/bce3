@@ -199,7 +199,7 @@ export const useProjectStore = defineStore("project", () => {
 
   function preparePieceAudioSource(project, piece) {
     if (piece.sources) return;
-    if (!piece.type || piece.type == "normal") {
+    if (!piece.type || piece.type == "normal" || piece.type == "hot") {
       piece.sources = [];
       for (let track of project.tracks) {
         let when = 0;
