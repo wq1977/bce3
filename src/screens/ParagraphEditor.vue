@@ -17,40 +17,24 @@ if (!store.list.length) {
 }
 
 function fmtFrameDuration(d) {
-    const secs = d / 44100
-    const hour = Math.floor(secs / 3600)
-    const minute = Math.floor((secs % 3600) / 60)
-    const sec = Math.floor(secs % 60)
-    return `${hour < 10 ? '0' : ''}${hour}:${minute < 10 ? '0' : ''}${minute}:${sec < 10 ? '0' : ''}${sec}`
+    const secs = d / 44100;
+    const hour = Math.floor(secs / 3600);
+    const minute = Math.floor((secs % 3600) / 60);
+    const sec = Math.floor(secs % 60);
+    return `${hour < 10 ? "0" : ""}${hour}:${minute < 10 ? "0" : ""}${minute}:${sec < 10 ? "0" : ""
+        }${sec}`;
 }
-
 const titlelist = computed({
     get: () => {
-        if (!project.value) return []
-        if (!project.value.paragraphs) return [];
-
-        const result = []
-        for (let index = 0; index < project.value.paragraphs.length; index++) {
-            const p = project.value.paragraphs[index];
-            if (p.comment) {
-                result.push({
-                    title: p.comment,
-                    index,
-                    sequence: p.sequence,
-                })
-            }
-        }
-        const list = result.sort((a, b) =>
-            (a.sequence || a.index) - (b.sequence || b.index)
-        )
-        let framelen = 0;
-        for (let value of list) {
-            const duration = store.getParagraphDuration(project.value.paragraphs[value.index])
-            framelen += duration
-            value.duration = fmtFrameDuration(framelen)
+        const list = store.getContentBlocks(project.value).map(b => ({
+            ...b
+        }))
+        let duration = 0;
+        for (let block of list) {
+            duration += block.duration
+            block.duration = fmtFrameDuration(duration)
         }
         return list
-
     },
     set: (list) => {
         list.forEach((p, idx) => {

@@ -629,6 +629,35 @@ export const useProjectStore = defineStore("project", () => {
     screenLock.release();
     recognitionProgress.value = -1;
   }
+  /***
+   * 一个播客由多个音轨组成，最主要的就是内容音轨，它是根据项目内容自动生成的
+   * 默认的内容包括已经分段好的段落内容和已经设置好的金句段落，可以统一设置金句的
+   * 起始终止间隔时间，金句间隔时间，段落的起始终止间隔时间和段落的间隔时间
+   */
+  function getContentBlocks(project) {
+    if (!project) return [];
+    if (!project.paragraphs) return [];
+
+    const result = [];
+    for (let index = 0; index < project.paragraphs.length; index++) {
+      const p = project.paragraphs[index];
+      if (p.comment) {
+        result.push({
+          title: p.comment,
+          index,
+          sequence: p.sequence,
+        });
+      }
+    }
+    const list = result.sort(
+      (a, b) => (a.sequence || a.index) - (b.sequence || b.index)
+    );
+    let framelen = 0;
+    for (let value of list) {
+      value.duration = getParagraphDuration(project.paragraphs[value.index]);
+    }
+    return list;
+  }
   load();
   api.on("recognition-progress", "project-store", function (p) {
     recognitionProgress.value = p.end / p.duration;
@@ -664,6 +693,7 @@ export const useProjectStore = defineStore("project", () => {
     saveProject,
     recognition,
     projectFrameLen,
+    getContentBlocks,
   };
 });
 

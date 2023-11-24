@@ -13,7 +13,7 @@ const route = useRoute()
                     <RouterLink :to="`/editor/track?id=${route.query.id}`">
                         <span class="border-2 mr-1 w-[1em] h-[1em] flex items-center justify-center rounded-full "><span
                                 class="text-xs">1</span></span>
-                        轨道编辑
+                        素材编辑
                     </RouterLink>
                 </NavigationMenuLink>
             </NavigationMenuItem>
@@ -33,7 +33,7 @@ const route = useRoute()
                     <RouterLink :to="`/editor/project?id=${route.query.id}`">
                         <span class="border-2  mr-1 w-[1em] h-[1em] flex items-center justify-center rounded-full "><span
                                 class="text-xs">3</span></span>
-                        播客编辑
+                        音轨编辑
                     </RouterLink>
                 </NavigationMenuLink>
             </NavigationMenuItem>
