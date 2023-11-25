@@ -652,11 +652,19 @@ export const useProjectStore = defineStore("project", () => {
     const list = result.sort(
       (a, b) => (a.sequence || a.index) - (b.sequence || b.index)
     );
-    let framelen = 0;
     for (let value of list) {
       value.duration = getParagraphDuration(project.paragraphs[value.index]);
     }
     return list;
+  }
+  function getHotLines(project) {
+    if (!project || !project.paragraphs) return [];
+    const lines = project.paragraphs.reduce(
+      (r, p) => [...r, ...p.pieces.filter((l) => l.type == "hot")],
+      []
+    );
+    console.log("hotlines:", lines);
+    return lines;
   }
   load();
   api.on("recognition-progress", "project-store", function (p) {
@@ -694,6 +702,7 @@ export const useProjectStore = defineStore("project", () => {
     recognition,
     projectFrameLen,
     getContentBlocks,
+    getHotLines,
   };
 });
 
