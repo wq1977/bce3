@@ -18,6 +18,7 @@ function getTrackSource(track, idx, start, end) {
   let secondSkip = 0,
     duration = end - start,
     offset = start;
+
   for (let i = 0; i < idx; i++) {
     secondSkip += track.origin[i].buffer.duration;
   }
@@ -153,7 +154,6 @@ export const useProjectStore = defineStore("project", () => {
           (p) => (p.pieces = words2pieces(project, p.start, p.end))
         );
       }
-      console.log(project);
     }
   }
   //把某个段落从某个piece的position的位置分为两段
@@ -241,6 +241,7 @@ export const useProjectStore = defineStore("project", () => {
 
   function preparePieceAudioSource(project, piece) {
     if (piece.sources) return;
+    if (!project.tracks[0].origin[0].buffer) return;
     if (!piece.type || piece.type == "normal" || piece.type == "hot") {
       piece.sources = [];
       for (let track of project.tracks) {
@@ -340,49 +341,13 @@ export const useProjectStore = defineStore("project", () => {
       }
     }
     play(sources, seek, ctx);
-
-    // const projectLength = projectTotalLen(project);
-    // const projectOffset = Math.ceil(seek * projectLength);
-
-    // const sources = [];
-    // for (let track of project.tracks) {
-    //   let seekLeft = projectOffset;
-    //   let when = 0;
-    //   for (let origin of track.origin) {
-    //     if (seekLeft > 0) {
-    //       const offset = seekLeft;
-    //       seekLeft -= origin.buffer.duration;
-    //       if (seekLeft < 0) {
-    //         const duration = origin.buffer.duration - offset;
-    //         seekLeft = 0;
-    //         sources.push({
-    //           when,
-    //           offset,
-    //           duration,
-    //           buffer: origin.buffer,
-    //         });
-    //         when += duration;
-    //       }
-    //     } else {
-    //       sources.push({
-    //         when,
-    //         offset: 0,
-    //         duration: origin.buffer.duration,
-    //         buffer: origin.buffer,
-    //       });
-    //       when += origin.buffer.duration;
-    //     }
-    //   }
-    //   if (when > projectLength) projectLength = when;
-    // }
-    // play(sources, ctx);
   }
 
   //source是一个包含内容和播放信息的片段
   //在when的时间播放buffer的offset位置，播放duration这么长，而且要loop
   function getProjectSources(project) {
     if (!project) return [];
-    const validParagraphs = project.paragraphs
+    const validParagraphs = (project.paragraphs || [])
       .filter((p) => p.comment)
       .sort((a, b) => a.sequence - b.sequence);
     for (let paragraph of validParagraphs) {
@@ -392,12 +357,15 @@ export const useProjectStore = defineStore("project", () => {
     }
     let allsource = [];
     let when = 0;
+    let paragraphDelay = PARAGRAPH_DEFAULT_DELAY;
     // 整个工程的播放顺序如下，如果使用片头曲，就先播放片头曲，如果定义了hotline，就把hotline插入到片头曲中
     // 片头曲不会重复播放，如果hotline的长度超过了片头曲，超出的部分将没有音乐
     // 片头曲的音量将按照hotline的长度自动变化
     // 如果没有指定片头曲，无论是否指定hotline，都不会播放hotline
     if (project.cfg) {
+      paragraphDelay = project.cfg.paragraphDelta || PARAGRAPH_DEFAULT_DELAY;
       if (project.cfg.usePianTou) {
+        if (!buffers[project.cfg.piantou.name]) return [];
         const piantouSource = {
           when,
           type: "piantou",
@@ -406,7 +374,7 @@ export const useProjectStore = defineStore("project", () => {
           buffer: buffers[project.cfg.piantou.name],
         };
         allsource.push(piantouSource);
-        const HOTLINE_PADDING_LEFT = PARAGRAPH_DEFAULT_DELAY;
+        const HOTLINE_PADDING_LEFT = paragraphDelay;
         //hotline是type是hot的piece
         const hotlines = getHotLines(project);
         piantouSource.volumns = [{ at: when, volumn: 1 }];
@@ -425,6 +393,7 @@ export const useProjectStore = defineStore("project", () => {
             when += HOTLINE_PADDING_LEFT;
             piantouSource.volumns.push({ at: when, volumn: 0.01 });
           }
+          if (!piece.sources.length) continue;
           for (let source of piece.sources) {
             allsource.push({
               ...source,
@@ -432,24 +401,27 @@ export const useProjectStore = defineStore("project", () => {
               when,
             });
           }
-          console.log(piece);
           when += piece.sources[0].duration;
+        }
+        if (when < piantouSource.when + piantouSource.duration) {
+          when = piantouSource.when + piantouSource.duration;
         }
       }
     }
-    if (when < PARAGRAPH_DEFAULT_DELAY) when = PARAGRAPH_DEFAULT_DELAY;
+    if (when < paragraphDelay) when = paragraphDelay;
 
     // 然后会按顺序播放段落，每个段落之前有默认的间隔，可以给每个段落单独指定段前间隔
     // 背景音乐的时长会跟各个段落的时长一致，可以指定当段落间隔大于3秒时，是否自动增大bgm的音量
     let bgmSource;
     if (project.cfg.useBGM) {
+      if (!buffers[project.cfg.bgm.name]) return [];
       bgmSource = {
         type: "bgm",
         when,
         offset: 0,
         buffer: buffers[project.cfg.bgm.name],
         loop: true,
-        volumns: [{ at: 0, volumn: 0.01 }],
+        volumns: [{ at: when, volumn: 0.01 }],
       };
       allsource.push(bgmSource);
     }
@@ -464,23 +436,24 @@ export const useProjectStore = defineStore("project", () => {
         ];
       }
       when += pDuration;
-      when += PARAGRAPH_DEFAULT_DELAY;
+      when += paragraphDelay;
     }
 
-    when -= PARAGRAPH_DEFAULT_DELAY;
+    when -= paragraphDelay;
     if (bgmSource) {
       bgmSource.duration = when - bgmSource.when;
     }
 
     // 片尾曲（如果有）将完整播放，可以指定一个提前播放量，如果有提前播放，音乐将自动控制
     if (project.cfg.usePianWei) {
+      if (!buffers[project.cfg.pianwei.name]) return [];
       const pianwei = {
         type: "pianwei",
         when,
         offset: 0,
         buffer: buffers[project.cfg.pianwei.name],
         duration: buffers[project.cfg.pianwei.name].duration,
-        volumns: [{ at: 0, volumn: 1 }],
+        volumns: [{ at: when, volumn: 1 }],
       };
       allsource.push(pianwei);
     }
@@ -668,7 +641,6 @@ export const useProjectStore = defineStore("project", () => {
       frameEnd: project.words[to].end,
     };
     preparePieceAudioSource(project, piece);
-    // console.log(piece);
     if (piece.sources.length) {
       return getSourcesBuffer(piece.sources);
     }

@@ -39,17 +39,14 @@ function dosave() {
 
 async function loadAudio(e) {
     const file = e.target.files[0]
-    const { path, buffer } = await api.call(
+    const { path } = await api.call(
         "loadTrack",
         project.value.id,
         file.path
     );
-    const ctx = new AudioContext();
-    const audioBuffer = await ctx.decodeAudioData(buffer.buffer);
     return {
         name: file.name,
         path,
-        buffer: audioBuffer,
     }
 }
 
@@ -57,18 +54,21 @@ async function onSelectPianTou(e) {
     const info = await loadAudio(e)
     project.value.cfg.piantou = { ...info }
     store.saveProject(project.value)
+    store.loadTracks()
 }
 
 async function onSelectPianWei(e) {
     const info = await loadAudio(e)
     project.value.cfg.pianwei = { ...info }
     store.saveProject(project.value)
+    store.loadTracks()
 }
 
 async function onSelectBGM(e) {
     const info = await loadAudio(e)
     project.value.cfg.bgm = { ...info }
     store.saveProject(project.value)
+    store.loadTracks()
 }
 
 const playProgress = ref([0])
@@ -83,6 +83,35 @@ async function setProgress() {
 watch(() => store.playProgress, async () => {
     playProgress.value = [store.playProgress * 100];
 })
+
+function vols2line(piece) {
+    const start = piece.when
+    const duration = piece.duration
+    const vols = piece.volumns || []
+    const lines = []
+    if (!vols || !vols.length) return []
+    lines.push({
+        x1: start * 100 / totalLen.value,
+        y1: vols[0].volumn * 100,
+        x2: vols[0].at * 100 / totalLen.value,
+        y2: vols[0].volumn * 100,
+    })
+    for (let i = 1; i < vols.length; i++) {
+        lines.push({
+            x1: vols[i - 1].at * 100 / totalLen.value,
+            y1: vols[i - 1].volumn * 100,
+            x2: vols[i].at * 100 / totalLen.value,
+            y2: vols[i].volumn * 100,
+        })
+    }
+    lines.push({
+        x1: vols[vols.length - 1].at * 100 / totalLen.value,
+        y1: vols[vols.length - 1].volumn * 100,
+        x2: (start + duration) * 100 / totalLen.value,
+        y2: vols[vols.length - 1].volumn * 100,
+    })
+    return lines
+}
 
 async function doPlay() {
     await store.loadTracks(project.value);
@@ -104,18 +133,33 @@ async function doPlay() {
                     :style="{ left: `${piece.when * 100 / totalLen}%`, width: `${piece.duration * 100 / totalLen}%` }"
                     class="absolute h-[100px] bg-red-200">
                 </div>
+                <svg v-for="piece in playSources.filter(p => p.type == 'piantou')" style="width:100%;height:100%;"
+                    class="absolute left-0 top-0">
+                    <line v-for="line in vols2line(piece)" :x1="`${line.x1}%`" :y1="`${line.y1}%`" :x2="`${line.x2}%`"
+                        :y2="`${line.y2}%`" style="stroke: red;stroke-width: 2;"></line>
+                </svg>
             </div>
             <div v-if="project.cfg.bgm && project.cfg.useBGM" class="flex relative overflow-x-auto bg-green-100 h-[50px]">
                 <div v-for="piece in playSources.filter(p => p.type == 'bgm')"
                     :style="{ left: `${piece.when * 100 / totalLen}%`, width: `${piece.duration * 100 / totalLen}%` }"
                     class="absolute h-[100px] bg-blue-200">
                 </div>
+                <svg v-for="piece in playSources.filter(p => p.type == 'bgm')" style="width:100%;height:100%;"
+                    class="absolute left-0 top-0">
+                    <line v-for="line in vols2line(piece)" :x1="`${line.x1}%`" :y1="`${line.y1}%`" :x2="`${line.x2}%`"
+                        :y2="`${line.y2}%`" style="stroke: red;stroke-width: 2;"></line>
+                </svg>
             </div>
             <div v-if="project.cfg.pianwei && project.cfg.usePianWei" class="flex relative  bg-green-100 h-[50px]">
                 <div v-for="piece in playSources.filter(p => p.type == 'pianwei')"
                     :style="{ left: `${piece.when * 100 / totalLen}%`, width: `${piece.duration * 100 / totalLen}%` }"
                     class="absolute h-[100px] bg-yellow-200">
                 </div>
+                <svg v-for="piece in playSources.filter(p => p.type == 'pianwei')" style="width:100%;height:100%;"
+                    class="absolute left-0 top-0">
+                    <line v-for="line in vols2line(piece)" :x1="`${line.x1}%`" :y1="`${line.y1}%`" :x2="`${line.x2}%`"
+                        :y2="`${line.y2}%`" style="stroke: red;stroke-width: 2;"></line>
+                </svg>
             </div>
 
         </div>
