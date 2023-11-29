@@ -90,25 +90,19 @@ function vols2line(piece) {
     const vols = piece.volumns || []
     const lines = []
     if (!vols || !vols.length) return []
-    lines.push({
-        x1: start * 100 / totalLen.value,
-        y1: vols[0].volumn * 100,
-        x2: vols[0].at * 100 / totalLen.value,
-        y2: vols[0].volumn * 100,
-    })
     for (let i = 1; i < vols.length; i++) {
         lines.push({
             x1: vols[i - 1].at * 100 / totalLen.value,
-            y1: vols[i - 1].volumn * 100,
+            y1: (1 - vols[i - 1].volumn) * 100,
             x2: vols[i].at * 100 / totalLen.value,
-            y2: vols[i].volumn * 100,
+            y2: (1 - vols[i].volumn) * 100,
         })
     }
     lines.push({
         x1: vols[vols.length - 1].at * 100 / totalLen.value,
-        y1: vols[vols.length - 1].volumn * 100,
+        y1: (1 - vols[vols.length - 1].volumn) * 100,
         x2: (start + duration) * 100 / totalLen.value,
-        y2: vols[vols.length - 1].volumn * 100,
+        y2: (1 - vols[vols.length - 1].volumn) * 100,
     })
     return lines
 }

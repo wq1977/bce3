@@ -355,6 +355,7 @@ export const useProjectStore = defineStore("project", () => {
         preparePieceAudioSource(project, piece)
       );
     }
+    const CHANGE_VOLUMN_DURATION = 1;
     let allsource = [];
     let when = 0;
     let paragraphDelay = PARAGRAPH_DEFAULT_DELAY;
@@ -372,14 +373,16 @@ export const useProjectStore = defineStore("project", () => {
           offset: 0,
           duration: buffers[project.cfg.piantou.name].duration,
           buffer: buffers[project.cfg.piantou.name],
+          volumns: [{ at: when, volumn: 0.9 }],
         };
         allsource.push(piantouSource);
         const HOTLINE_PADDING_LEFT = paragraphDelay;
         //hotline是type是hot的piece
         const hotlines = getHotLines(project);
-        piantouSource.volumns = [{ at: when, volumn: 1 }];
         let currentHotEndAt = 0;
+        when += HOTLINE_PADDING_LEFT;
         for (let piece of hotlines) {
+          if (!piece.sources.length) continue;
           let pieceEndAt = piece.wordStart;
           while (
             pieceEndAt < project.words.length &&
@@ -387,13 +390,29 @@ export const useProjectStore = defineStore("project", () => {
           ) {
             pieceEndAt++;
           }
+
           if (pieceEndAt != currentHotEndAt) {
+            if (currentHotEndAt != 0) {
+              piantouSource.volumns.push({
+                at: when + CHANGE_VOLUMN_DURATION,
+                volumn: 0.1,
+              });
+              piantouSource.volumns.push({
+                at: when + CHANGE_VOLUMN_DURATION * 2,
+                volumn: 0.9,
+              });
+              when += HOTLINE_PADDING_LEFT;
+            }
+            piantouSource.volumns.push({
+              at: when - CHANGE_VOLUMN_DURATION * 2,
+              volumn: 0.9,
+            });
+            piantouSource.volumns.push({
+              at: when - CHANGE_VOLUMN_DURATION,
+              volumn: 0.1,
+            });
             currentHotEndAt = pieceEndAt;
-            piantouSource.volumns.push({ at: when, volumn: 1 });
-            when += HOTLINE_PADDING_LEFT;
-            piantouSource.volumns.push({ at: when, volumn: 0.01 });
           }
-          if (!piece.sources.length) continue;
           for (let source of piece.sources) {
             allsource.push({
               ...source,
@@ -403,6 +422,14 @@ export const useProjectStore = defineStore("project", () => {
           }
           when += piece.sources[0].duration;
         }
+        piantouSource.volumns.push({
+          at: when + CHANGE_VOLUMN_DURATION,
+          volumn: 0.1,
+        });
+        piantouSource.volumns.push({
+          at: when + CHANGE_VOLUMN_DURATION * 2,
+          volumn: 0.9,
+        });
         if (when < piantouSource.when + piantouSource.duration) {
           when = piantouSource.when + piantouSource.duration;
         }
@@ -421,7 +448,7 @@ export const useProjectStore = defineStore("project", () => {
         offset: 0,
         buffer: buffers[project.cfg.bgm.name],
         loop: true,
-        volumns: [{ at: when, volumn: 0.01 }],
+        volumns: [{ at: when, volumn: 0.1 }],
       };
       allsource.push(bgmSource);
     }
@@ -429,6 +456,7 @@ export const useProjectStore = defineStore("project", () => {
     //播放主要内容
     for (let paragraph of validParagraphs) {
       const pDuration = getParagraphDuration(paragraph);
+      when += paragraphDelay;
       for (let piece of paragraph.pieces) {
         allsource = [
           ...allsource,
@@ -436,10 +464,8 @@ export const useProjectStore = defineStore("project", () => {
         ];
       }
       when += pDuration;
-      when += paragraphDelay;
     }
 
-    when -= paragraphDelay;
     if (bgmSource) {
       bgmSource.duration = when - bgmSource.when;
     }
@@ -453,7 +479,7 @@ export const useProjectStore = defineStore("project", () => {
         offset: 0,
         buffer: buffers[project.cfg.pianwei.name],
         duration: buffers[project.cfg.pianwei.name].duration,
-        volumns: [{ at: when, volumn: 1 }],
+        volumns: [{ at: when, volumn: 0.9 }],
       };
       allsource.push(pianwei);
     }
@@ -557,10 +583,7 @@ export const useProjectStore = defineStore("project", () => {
   }
 
   function getParagraphDuration(paragraph) {
-    return (
-      paragraph.pieces.reduce((r, i) => r + getPieceDuration(i), 0) +
-      PARAGRAPH_DEFAULT_DELAY
-    );
+    return paragraph.pieces.reduce((r, i) => r + getPieceDuration(i), 0);
   }
 
   //合并两个段落
@@ -805,34 +828,7 @@ export const useProjectStore = defineStore("project", () => {
     screenLock.release();
     recognitionProgress.value = -1;
   }
-  /***
-   * 一个播客由多个音轨组成，最主要的就是内容音轨，它是根据项目内容自动生成的
-   * 默认的内容包括已经分段好的段落内容和已经设置好的金句段落，可以统一设置金句的
-   * 起始终止间隔时间，金句间隔时间，段落的起始终止间隔时间和段落的间隔时间
-   */
-  function getContentBlocks(project) {
-    if (!project) return [];
-    if (!project.paragraphs) return [];
 
-    const result = [];
-    for (let index = 0; index < project.paragraphs.length; index++) {
-      const p = project.paragraphs[index];
-      if (p.comment) {
-        result.push({
-          title: p.comment,
-          index,
-          sequence: p.sequence,
-        });
-      }
-    }
-    const list = result.sort(
-      (a, b) => (a.sequence || a.index) - (b.sequence || b.index)
-    );
-    for (let value of list) {
-      value.duration = getParagraphDuration(project.paragraphs[value.index]);
-    }
-    return list;
-  }
   function getHotLines(project) {
     if (!project || !project.paragraphs) return [];
     const lines = project.paragraphs.reduce(
@@ -881,7 +877,6 @@ export const useProjectStore = defineStore("project", () => {
     saveProject,
     recognition,
     projectTotalLen,
-    getContentBlocks,
     getHotLines,
     getProjectSources,
   };
