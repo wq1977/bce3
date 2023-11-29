@@ -3,13 +3,14 @@ import { defineStore } from "pinia";
 import moment from "moment";
 import toWav from "audiobuffer-to-wav";
 
-const PARAGRAPH_DELAY = 44100 * 3;
+const PARAGRAPH_DEFAULT_DELAY = 3;
 const S2T_SAMPLE_RATE = 44100;
 const GENURATE_SAMPLE_RATE = 44100;
 
 let beepBuffer = null;
 const loading = ref(false);
 const playProgress = ref(0);
+const buffers = {};
 
 //某个track的某个buffer如果全局start和end的时候的offset和duration
 function getTrackSource(track, idx, start, end) {
@@ -40,7 +41,11 @@ function words2pieces(project, start, end) {
   let currentPiece;
   for (let idx = 0; idx < words.length; idx++) {
     const wordType = words[idx].type || "normal";
-    if (currentPiece && wordType == currentPiece.type) {
+    if (
+      currentPiece &&
+      wordType == currentPiece.type &&
+      !!words[idx].ishot == currentPiece.ishot
+    ) {
       currentPiece.frameEnd = words[idx].end;
       currentPiece.end = words[idx].end / S2T_SAMPLE_RATE;
       currentPiece.text = `${currentPiece.text}${words[idx].word}`;
@@ -57,6 +62,7 @@ function words2pieces(project, start, end) {
       }
       currentPiece = {
         type: wordType,
+        ishot: !!words[idx].ishot,
         frameStart: words[idx].start,
         frameEnd: words[idx].end,
         start: words[idx].start / S2T_SAMPLE_RATE,
@@ -187,8 +193,35 @@ export const useProjectStore = defineStore("project", () => {
     return await offlineCtx.startRendering();
   }
   async function loadTracks(project) {
-    if (!beepBuffer) beepBuffer = await buildBeepBuffer();
     const context = new AudioContext();
+    if (!beepBuffer) beepBuffer = await buildBeepBuffer();
+    if (project.cfg.piantou && !buffers[project.cfg.piantou.name]) {
+      const fileBuffer = await api.call(
+        "readfile",
+        project.id,
+        project.cfg.piantou.path
+      );
+      const buffer = await context.decodeAudioData(fileBuffer.buffer);
+      buffers[project.cfg.piantou.name] = buffer;
+    }
+    if (project.cfg.bgm && !buffers[project.cfg.bgm.name]) {
+      const fileBuffer = await api.call(
+        "readfile",
+        project.id,
+        project.cfg.bgm.path
+      );
+      const buffer = await context.decodeAudioData(fileBuffer.buffer);
+      buffers[project.cfg.bgm.name] = buffer;
+    }
+    if (project.cfg.pianwei && !buffers[project.cfg.pianwei.name]) {
+      const fileBuffer = await api.call(
+        "readfile",
+        project.id,
+        project.cfg.pianwei.path
+      );
+      const buffer = await context.decodeAudioData(fileBuffer.buffer);
+      buffers[project.cfg.pianwei.name] = buffer;
+    }
     for (let track of project.tracks) {
       for (let idx = 0; idx < track.origin.length; idx++) {
         if (!track.origin[idx].buffer) {
@@ -221,6 +254,7 @@ export const useProjectStore = defineStore("project", () => {
           );
           if (duration > 0) {
             piece.sources.push({
+              type: "content",
               when,
               offset,
               duration,
@@ -237,6 +271,7 @@ export const useProjectStore = defineStore("project", () => {
       piece.sources = [
         {
           buffer: beepBuffer,
+          type: "content",
           when: 0,
           offset: 0,
           duration: piece.duration,
@@ -248,28 +283,7 @@ export const useProjectStore = defineStore("project", () => {
 
   async function doExport(project) {
     await loadTracks(project);
-    const validParagraphs = project.paragraphs
-      .filter((p) => p.comment)
-      .sort((a, b) => a.sequence - b.sequence);
-    for (let paragraph of validParagraphs) {
-      paragraph.pieces.forEach((piece) =>
-        preparePieceAudioSource(project, piece)
-      );
-    }
-    let allsource = [];
-    let when = 0;
-    for (let paragraph of validParagraphs) {
-      for (let piece of paragraph.pieces) {
-        allsource = [
-          ...allsource,
-          ...piece.sources.map((s) => ({ ...s, when: s.when + when })),
-        ];
-        when += isNaN(piece.duration)
-          ? piece.end - piece.start
-          : piece.duration;
-      }
-      when += PARAGRAPH_DELAY;
-    }
+    const allsource = getProjectSources(project);
     const buffer = await getSourcesBuffer(allsource);
     await api.call(
       "save2file",
@@ -283,6 +297,7 @@ export const useProjectStore = defineStore("project", () => {
     paragraph.pieces.forEach((piece) =>
       preparePieceAudioSource(project, piece)
     );
+
     let allsource = [];
     let when = 0;
     for (let piece of paragraph.pieces) {
@@ -311,44 +326,204 @@ export const useProjectStore = defineStore("project", () => {
   }
 
   function playTracks(project, seek = 0, ctx = null) {
-    const projectLength = projectTotalLen(project);
-    const projectOffset = Math.ceil(seek * projectLength);
-
     const sources = [];
     for (let track of project.tracks) {
-      let seekLeft = projectOffset;
       let when = 0;
       for (let origin of track.origin) {
-        if (seekLeft > 0) {
-          const offset = seekLeft;
-          seekLeft -= origin.buffer.duration;
-          if (seekLeft < 0) {
-            const duration = origin.buffer.duration - offset;
-            seekLeft = 0;
-            sources.push({
-              when,
-              offset,
-              duration,
-              buffer: origin.buffer,
-            });
-            when += duration;
-          }
-        } else {
-          sources.push({
-            when,
-            offset: 0,
-            duration: origin.buffer.duration,
-            buffer: origin.buffer,
-          });
-          when += origin.buffer.duration;
-        }
+        sources.push({
+          when,
+          offset: 0,
+          duration: origin.buffer.duration,
+          buffer: origin.buffer,
+        });
+        when += origin.buffer.duration;
       }
-      if (when > projectLength) projectLength = when;
     }
-    play(sources, ctx);
+    play(sources, ctx, seek);
+
+    // const projectLength = projectTotalLen(project);
+    // const projectOffset = Math.ceil(seek * projectLength);
+
+    // const sources = [];
+    // for (let track of project.tracks) {
+    //   let seekLeft = projectOffset;
+    //   let when = 0;
+    //   for (let origin of track.origin) {
+    //     if (seekLeft > 0) {
+    //       const offset = seekLeft;
+    //       seekLeft -= origin.buffer.duration;
+    //       if (seekLeft < 0) {
+    //         const duration = origin.buffer.duration - offset;
+    //         seekLeft = 0;
+    //         sources.push({
+    //           when,
+    //           offset,
+    //           duration,
+    //           buffer: origin.buffer,
+    //         });
+    //         when += duration;
+    //       }
+    //     } else {
+    //       sources.push({
+    //         when,
+    //         offset: 0,
+    //         duration: origin.buffer.duration,
+    //         buffer: origin.buffer,
+    //       });
+    //       when += origin.buffer.duration;
+    //     }
+    //   }
+    //   if (when > projectLength) projectLength = when;
+    // }
+    // play(sources, ctx);
   }
 
-  function play(sources, ctx) {
+  //source是一个包含内容和播放信息的片段
+  //在when的时间播放buffer的offset位置，播放duration这么长，而且要loop
+  function getProjectSources(project) {
+    if (!project) return [];
+    const validParagraphs = project.paragraphs
+      .filter((p) => p.comment)
+      .sort((a, b) => a.sequence - b.sequence);
+    for (let paragraph of validParagraphs) {
+      paragraph.pieces.forEach((piece) =>
+        preparePieceAudioSource(project, piece)
+      );
+    }
+    let allsource = [];
+    let when = 0;
+    // 整个工程的播放顺序如下，如果使用片头曲，就先播放片头曲，如果定义了hotline，就把hotline插入到片头曲中
+    // 片头曲不会重复播放，如果hotline的长度超过了片头曲，超出的部分将没有音乐
+    // 片头曲的音量将按照hotline的长度自动变化
+    // 如果没有指定片头曲，无论是否指定hotline，都不会播放hotline
+    if (project.cfg) {
+      if (project.cfg.usePianTou) {
+        const piantouSource = {
+          when,
+          type: "piantou",
+          offset: 0,
+          duration: buffers[project.cfg.piantou.name].duration,
+          buffer: buffers[project.cfg.piantou.name],
+        };
+        allsource.push(piantouSource);
+        const HOTLINE_PADDING_LEFT = PARAGRAPH_DEFAULT_DELAY;
+        //hotline是type是hot的piece
+        const hotlines = getHotLines(project);
+        piantouSource.volumns = [{ at: when, volumn: 1 }];
+        let currentHotEndAt = 0;
+        for (let piece of hotlines) {
+          let pieceEndAt = piece.wordStart;
+          while (
+            pieceEndAt < project.words.length &&
+            project.words[pieceEndAt].ishot
+          ) {
+            pieceEndAt++;
+          }
+          if (pieceEndAt != currentHotEndAt) {
+            currentHotEndAt = pieceEndAt;
+            piantouSource.volumns.push({ at: when, volumn: 1 });
+            when += HOTLINE_PADDING_LEFT;
+            piantouSource.volumns.push({ at: when, volumn: 0.01 });
+          }
+          for (let source of piece.sources) {
+            allsource.push({
+              ...source,
+              type: "hot",
+              when,
+            });
+          }
+          console.log(piece);
+          when += piece.sources[0].duration;
+        }
+      }
+    }
+    if (when < PARAGRAPH_DEFAULT_DELAY) when = PARAGRAPH_DEFAULT_DELAY;
+
+    // 然后会按顺序播放段落，每个段落之前有默认的间隔，可以给每个段落单独指定段前间隔
+    // 背景音乐的时长会跟各个段落的时长一致，可以指定当段落间隔大于3秒时，是否自动增大bgm的音量
+    let bgmSource;
+    if (project.cfg.useBGM) {
+      bgmSource = {
+        type: "bgm",
+        when,
+        offset: 0,
+        buffer: buffers[project.cfg.bgm.name],
+        loop: true,
+        volumns: [{ at: 0, volumn: 0.01 }],
+      };
+      allsource.push(bgmSource);
+    }
+
+    //播放主要内容
+    for (let paragraph of validParagraphs) {
+      const pDuration = getParagraphDuration(paragraph);
+      for (let piece of paragraph.pieces) {
+        allsource = [
+          ...allsource,
+          ...piece.sources.map((s) => ({ ...s, when: s.when + when })),
+        ];
+      }
+      when += pDuration;
+      when += PARAGRAPH_DEFAULT_DELAY;
+    }
+
+    when -= PARAGRAPH_DEFAULT_DELAY;
+    if (bgmSource) {
+      bgmSource.duration = when - bgmSource.when;
+    }
+
+    // 片尾曲（如果有）将完整播放，可以指定一个提前播放量，如果有提前播放，音乐将自动控制
+    if (project.cfg.usePianWei) {
+      const pianwei = {
+        type: "pianwei",
+        when,
+        offset: 0,
+        buffer: buffers[project.cfg.pianwei.name],
+        duration: buffers[project.cfg.pianwei.name].duration,
+        volumns: [{ at: 0, volumn: 1 }],
+      };
+      allsource.push(pianwei);
+    }
+    return allsource;
+  }
+
+  function getSourcesLen(sources) {
+    sources = sources.sort((a, b) => a.when + a.duration - b.when - b.duration);
+    const last = sources[sources.length - 1];
+    return last.when + last.duration;
+  }
+
+  function trim(sources, seek = 0) {
+    const totalLen = getSourcesLen(sources);
+    const seekPosition = totalLen * seek;
+    const newsources = [];
+    for (let source of sources) {
+      const begin = source.when;
+      const end = source.when + source.duration;
+      if (end > seekPosition) {
+        if (begin <= seekPosition) {
+          const needTrim = seekPosition - begin;
+          newsources.push({
+            ...source,
+            when: 0,
+            offset: needTrim,
+            duration: source.duration - needTrim,
+          });
+        } else {
+          newsources.push({
+            ...source,
+            when: (source.when -= seekPosition),
+          });
+        }
+      }
+    }
+    return newsources;
+  }
+
+  function play(sources, ctx = null, seek = 0) {
+    const totalLen = getSourcesLen(sources);
+    const seekPosition = totalLen * seek;
+    sources = trim(sources, seek);
     if (!ctx) {
       ctx = new AudioContext();
     }
@@ -376,7 +551,7 @@ export const useProjectStore = defineStore("project", () => {
     });
     function outputTimestamps() {
       const ts = ctx.currentTime;
-      playProgress.value = ts / totalSecs;
+      playProgress.value = (ts + seekPosition) / totalLen;
       rAF = requestAnimationFrame(outputTimestamps);
     }
     let rAF = requestAnimationFrame(outputTimestamps);
@@ -410,7 +585,7 @@ export const useProjectStore = defineStore("project", () => {
   function getParagraphDuration(paragraph) {
     return (
       paragraph.pieces.reduce((r, i) => r + getPieceDuration(i), 0) +
-      PARAGRAPH_DELAY
+      PARAGRAPH_DEFAULT_DELAY
     );
   }
 
@@ -501,8 +676,14 @@ export const useProjectStore = defineStore("project", () => {
   async function setTag(project, paragraphIdx, wordstart, wordend, tag) {
     if (project.paragraphs[paragraphIdx].start > wordstart) return;
     if (project.paragraphs[paragraphIdx].end < wordend) return;
-    for (let i = wordstart; i <= wordend; i++) {
-      project.words[i].type = tag;
+    if (tag == "hot") {
+      for (let i = wordstart; i <= wordend; i++) {
+        project.words[i].ishot = true;
+      }
+    } else {
+      for (let i = wordstart; i <= wordend; i++) {
+        project.words[i].type = tag;
+      }
     }
     project.paragraphs[paragraphIdx].pieces = words2pieces(
       project,
@@ -511,6 +692,15 @@ export const useProjectStore = defineStore("project", () => {
     );
     saveWords(project);
     saveParagraph(project);
+  }
+
+  async function setHot(project, paragraphIdx, wordstart, wordend, value) {
+    if (project.paragraphs[paragraphIdx].start > wordstart) return;
+    if (project.paragraphs[paragraphIdx].end < wordend) return;
+    for (let i = wordstart; i <= wordend; i++) {
+      project.words[i].ishot = value;
+    }
+    saveWords(project);
   }
   function updateParagraphsPieces(project, idx) {
     project.paragraphs[idx].pieces = words2pieces(
@@ -673,7 +863,10 @@ export const useProjectStore = defineStore("project", () => {
   function getHotLines(project) {
     if (!project || !project.paragraphs) return [];
     const lines = project.paragraphs.reduce(
-      (r, p) => [...r, ...p.pieces.filter((l) => l.type == "hot")],
+      (r, p) => [
+        ...r,
+        ...p.pieces.filter((l) => l.ishot && l.type !== "delete"),
+      ],
       []
     );
     return lines;
@@ -689,6 +882,7 @@ export const useProjectStore = defineStore("project", () => {
     loading,
     playProgress,
     recognitionProgress,
+    play,
     create,
     prepare,
     words2pieces,
@@ -698,6 +892,7 @@ export const useProjectStore = defineStore("project", () => {
     playParagraph,
     getWordIndex,
     setTag,
+    setHot,
     getWordsBuffer,
     playWords,
     playWordsRaw,
@@ -715,6 +910,7 @@ export const useProjectStore = defineStore("project", () => {
     projectTotalLen,
     getContentBlocks,
     getHotLines,
+    getProjectSources,
   };
 });
 
@@ -845,6 +1041,7 @@ if (import.meta.vitest) {
               frameEnd: 1,
               text: "a",
               type: "normal",
+              ishot: false,
               wordStart: 0,
             },
           ],
@@ -859,6 +1056,7 @@ if (import.meta.vitest) {
               frameEnd: 2,
               text: "b",
               type: "normal",
+              ishot: false,
               wordStart: 1,
             },
           ],
@@ -873,6 +1071,27 @@ if (import.meta.vitest) {
           1
         )
       ).toBe(1);
+    });
+    it("getProjectSources", async () => {
+      global.AudioContext = class {};
+      beepBuffer = {};
+      const allsources = store.getProjectSources({
+        cfg: {},
+        tracks: [{ origin: [{ buffer: { duration: 5 } }] }],
+        paragraphs: [
+          {
+            comment: "test",
+            pieces: [
+              {
+                from: 1,
+                to: 2,
+                sources: [{ when: 1, offset: 0, duration: 5, buffer: {} }],
+              },
+            ],
+          },
+        ],
+      });
+      expect(allsources.length).toBe(1);
     });
     it("words2pieces", () => {
       var list = words2pieces(
@@ -892,6 +1111,7 @@ if (import.meta.vitest) {
           frameEnd: 3,
           text: "ab",
           type: "normal",
+          ishot: false,
           wordStart: 0,
         },
       ]);
@@ -915,6 +1135,7 @@ if (import.meta.vitest) {
           frameEnd: 2,
           text: "a",
           type: "normal",
+          ishot: false,
           wordStart: 0,
         },
         {
@@ -922,6 +1143,7 @@ if (import.meta.vitest) {
           frameEnd: 3,
           text: "b",
           type: "delete",
+          ishot: false,
           wordStart: 1,
         },
       ]);

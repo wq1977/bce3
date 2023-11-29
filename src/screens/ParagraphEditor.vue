@@ -102,6 +102,12 @@ function setSelectionTag(tag) {
     }
 }
 
+function setSelectionHot(value) {
+    if (selWordStart.value && selWordEnd.value) {
+        store.setHot(project.value, selParagraph.value, selWordStart.value, selWordEnd.value, value)
+    }
+}
+
 function pieceMouseup(e) {
     if (e.button != 0) return; //左键
     setTimeout(() => {
@@ -140,7 +146,6 @@ function pieceMouseup(e) {
             selWordStart.value = Math.min(wordBase, wordExtent)
             selWordEnd.value = Math.max(wordBase, wordExtent)
             selParagraph.value = paragraphIdxBase
-            console.log('select change:', paragraphIdxBase, selWordStart.value, selWordEnd.value)
         } else {
             selWordStart.value = null
             selWordEnd.value = null
@@ -168,9 +173,9 @@ function pieceMouseup(e) {
                                 class="inline mr-2" />
                             <span>&nbsp;&nbsp;</span>
                             <span v-for="(piece, pidx) in paragraph.pieces" :data-paragraph="idx" :data-piece="pidx"
-                                :data-tag="piece.type || 'normal'" @mouseup="pieceMouseup"
+                                :data-tag="piece.type || 'normal'" @mouseup="pieceMouseup" :data-ishot="piece.ishot"
                                 @keydown="paragraphKeyDown($event, idx, piece)" tabindex="0"
-                                class="leading-loose focus:outline-none decoration-4 decoration-dashed data-[tag=beep]:line-through data-[tag=hot]:font-bold data-[tag=hot]:text-yellow-500 data-[tag=beep]:decoration-wavy data-[tag=beep]:text-blue-600 data-[tag=delete]:line-through data-[tag=delete]:text-red-600 antialiased">
+                                class="leading-loose focus:outline-none decoration-4 decoration-dashed data-[tag=beep]:line-through data-[ishot=true]:bg-orange-200 data-[tag=beep]:decoration-wavy data-[tag=beep]:text-blue-600 data-[tag=delete]:line-through data-[tag=delete]:text-red-600 antialiased">
                                 {{
                                     piece.text }} </span>
                         </div>
@@ -203,10 +208,16 @@ function pieceMouseup(e) {
                         @click="setSelectionTag('beep')">
                         <Icon icon="jam:mask-f" class="mr-2" /> 打码
                     </ContextMenuItem>
+                    <ContextMenuSeparator class="h-[1px] bg-green-300 m-[5px]" />
                     <ContextMenuItem
                         class="group text-[13px] leading-none  rounded-[3px] flex items-center h-[25px] px-[5px] relative pl-[18px] select-none outline-none  data-[disabled]:pointer-events-none data-[highlighted]:bg-green-600 data-[highlighted]:text-green-400"
-                        @click="setSelectionTag('hot')">
+                        @click="setSelectionHot(true)">
                         <Icon icon="jam:mask-f" class="mr-2" /> 金句
+                    </ContextMenuItem>
+                    <ContextMenuItem
+                        class="group text-[13px] leading-none  rounded-[3px] flex items-center h-[25px] px-[5px] relative pl-[18px] select-none outline-none  data-[disabled]:pointer-events-none data-[highlighted]:bg-green-600 data-[highlighted]:text-green-400"
+                        @click="setSelectionHot(false)">
+                        <Icon icon="jam:mask-f" class="mr-2" /> 取消金句
                     </ContextMenuItem>
                     <ContextMenuSeparator class="h-[1px] bg-green-300 m-[5px]" />
                     <ContextMenuItem

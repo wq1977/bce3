@@ -31,24 +31,22 @@ function deleteBuffer(proj, track, buffer) {
     store.saveProject(proj)
 }
 
-const seek = ref(0)
 const playProgress = ref([0])
 async function setProgress() {
     if (store.stop) {
         store.stop()
         await new Promise(r => setTimeout(r, 200))
-        seek.value = playProgress.value / 100
-        store.playTracks(project.value, seek.value)
+        const seek = playProgress.value / 100
+        store.playTracks(project.value, seek)
     }
 }
 
 watch(() => store.playProgress, async () => {
-    playProgress.value = [((seek.value || 0) + (1 - seek.value) * store.playProgress) * 100];
+    playProgress.value = [store.playProgress * 100];
 })
 
 function playTrack() {
-    seek.value = playProgress.value[0] / 100
-    store.playTracks(project.value, seek.value)
+    store.playTracks(project.value, playProgress.value[0] / 100)
 }
 
 function onSelectFiles(e) {
