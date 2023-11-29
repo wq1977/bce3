@@ -71,25 +71,22 @@ async function onSelectBGM(e) {
     store.saveProject(project.value)
 }
 
-const seek = ref(0)
 const playProgress = ref([0])
 async function setProgress() {
     if (store.stop) {
         store.stop()
         await new Promise(r => setTimeout(r, 200))
-        seek.value = playProgress.value / 100
-        store.playTracks(project.value, seek.value)
+        store.play(playSources.value, playProgress.value[0] / 100)
     }
 }
 
 watch(() => store.playProgress, async () => {
-    playProgress.value = [((seek.value || 0) + (1 - seek.value) * store.playProgress) * 100];
+    playProgress.value = [store.playProgress * 100];
 })
 
 async function doPlay() {
     await store.loadTracks(project.value);
-    console.log(playSources.value)
-    store.play(playSources.value)
+    store.play(playSources.value, playProgress.value[0] / 100)
 }
 
 </script>
@@ -207,9 +204,11 @@ async function doPlay() {
             </label>
         </div>
         <div class="mt-[50px] bg-gray-300 p-5 text-right">
-            <button @click="doPlay"
+            <button v-if="store.stop" @click="store.stop()"
+                class="text-green-800 mr-5 font-semibold shadow-gray-700 hover:bg-green-300 inline-flex h-[35px] items-center justify-center rounded-[4px] bg-white px-[15px] leading-none shadow-[0_2px_10px] focus:outline-none">停止</button>
+            <button v-else @click="doPlay"
                 class="text-green-800 mr-5 font-semibold shadow-gray-700 hover:bg-green-300 inline-flex h-[35px] items-center justify-center rounded-[4px] bg-white px-[15px] leading-none shadow-[0_2px_10px] focus:outline-none">播放</button>
-            <button
+            <button v-if="!store.stop"
                 class="text-green-800 mr-5 font-semibold shadow-gray-700 hover:bg-green-300 inline-flex h-[35px] items-center justify-center rounded-[4px] bg-white px-[15px] leading-none shadow-[0_2px_10px] focus:outline-none">导出</button>
         </div>
     </div>

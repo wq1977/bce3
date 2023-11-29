@@ -339,7 +339,7 @@ export const useProjectStore = defineStore("project", () => {
         when += origin.buffer.duration;
       }
     }
-    play(sources, ctx, seek);
+    play(sources, seek, ctx);
 
     // const projectLength = projectTotalLen(project);
     // const projectOffset = Math.ceil(seek * projectLength);
@@ -520,10 +520,11 @@ export const useProjectStore = defineStore("project", () => {
     return newsources;
   }
 
-  function play(sources, ctx = null, seek = 0) {
-    const totalLen = getSourcesLen(sources);
+  function play(sources, seek = 0, ctx = null) {
+    const deepClone = sources.map((s) => ({ ...s }));
+    const totalLen = getSourcesLen(deepClone);
     const seekPosition = totalLen * seek;
-    sources = trim(sources, seek);
+    sources = trim(deepClone, seek);
     if (!ctx) {
       ctx = new AudioContext();
     }
