@@ -20,10 +20,10 @@ async function init() {
     await store.loadTracks(project.value)
 }
 
-const total = computed(() => Math.max(...((project.value ? project.value.tracks : []) || []).map(t => t.origin.reduce((r, c) => r + (c.buffer ? c.buffer.length : 0), 0))))
+const total = computed(() => Math.max(...((project.value ? project.value.tracks : []) || []).map(t => t.origin.reduce((r, c) => r + (c.buffer ? c.buffer.duration : 0), 0))))
 
 function clipwidth(clip) {
-    return clip.buffer ? (clip.buffer.length * 100 / total.value) : 0
+    return clip.buffer ? (clip.buffer.duration * 100 / total.value) : 0
 }
 
 function deleteBuffer(proj, track, buffer) {
@@ -43,8 +43,13 @@ async function setProgress() {
 }
 
 watch(() => store.playProgress, async () => {
-    playProgress.value = [((seek.value || 0) + store.playProgress) * 100];
+    playProgress.value = [((seek.value || 0) + (1 - seek.value) * store.playProgress) * 100];
 })
+
+function playTrack() {
+    seek.value = playProgress.value[0] / 100
+    store.playTracks(project.value, seek.value)
+}
 
 function onSelectFiles(e) {
     store.appendNewTracks(project.value, e.target.files)
@@ -102,10 +107,10 @@ async function doRecognition() {
             <input id="track-selector" :disabled="store.recognitionProgress >= 0" class="hidden" @change="onSelectFiles"
                 accept=".wav, .mp3, .m4a" multiple type="file" />
         </label>
-        <button @click="doRecognition" :disabled="store.recognitionProgress >= 0 || store.projectFrameLen(project) <= 0"
+        <button @click="doRecognition" :disabled="store.recognitionProgress >= 0 || store.projectTotalLen(project) <= 0"
             class="disabled:text-gray-300 disabled:hover:bg-gray-200 mr-2 w-[100px] h-[35px] bg-gray-200 text-blue-500 font-semibold hover:bg-gray-300 shadow-sm inline-flex  items-center justify-center rounded-[4px] px-[15px] leading-none outline-none transition-all">开始识别</button>
-        <button :disabled="store.recognitionProgress >= 0 || store.projectFrameLen(project) <= 0" v-if="!store.stop"
-            @click="store.playTracks(project, playProgress[0] / 100)"
+        <button :disabled="store.recognitionProgress >= 0 || store.projectTotalLen(project) <= 0" v-if="!store.stop"
+            @click="playTrack"
             class="disabled:text-gray-300 disabled:hover:bg-gray-200 mr-2 w-[100px] h-[35px] bg-gray-200 text-blue-500 font-semibold hover:bg-gray-300 shadow-sm inline-flex  items-center justify-center rounded-[4px] px-[15px] leading-none outline-none transition-all">播放</button>
         <button :disabled="store.recognitionProgress >= 0" v-else @click="() => { store.stop(); store.stop = null; }"
             class="disabled:text-gray-300 disabled:hover:bg-gray-200 mr-2 w-[100px] h-[35px] bg-gray-200 text-blue-500 font-semibold hover:bg-gray-300 shadow-sm inline-flex  items-center justify-center rounded-[4px] px-[15px] leading-none outline-none transition-all">停止</button>

@@ -4,29 +4,33 @@ import moment from "moment";
 import toWav from "audiobuffer-to-wav";
 
 const PARAGRAPH_DELAY = 44100 * 3;
+const S2T_SAMPLE_RATE = 44100;
+const GENURATE_SAMPLE_RATE = 44100;
 
 let beepBuffer = null;
 const loading = ref(false);
 const playProgress = ref(0);
+
+//某个track的某个buffer如果全局start和end的时候的offset和duration
 function getTrackSource(track, idx, start, end) {
-  //start 和 end 是全局的以帧为单位的开始和结束时间，比如 100, 200
-  let frameskip = 0,
+  //start 和 end 是全局的以秒为单位的开始和结束时间，比如 1.01, 2
+  let secondSkip = 0,
     duration = end - start,
     offset = start;
   for (let i = 0; i < idx; i++) {
-    frameskip += track.origin[i].buffer.length;
+    secondSkip += track.origin[i].buffer.duration;
   }
   // idx指的是第几个buffer,一个track可能有多个buffer,start和end有可能跨越多个track
   // 将start和end映射到这个buffer的时候，start 有可能小于0，等于0或者大于0
-  offset -= frameskip;
+  offset -= secondSkip;
   if (offset < 0) {
     duration += offset;
     offset = 0;
   }
-  if (offset > track.origin[idx].buffer.length) {
+  if (offset > track.origin[idx].buffer.duration) {
     duration = 0;
-  } else if (offset + duration > track.origin[idx].buffer.length) {
-    duration -= offset + duration - track.origin[idx].buffer.length;
+  } else if (offset + duration > track.origin[idx].buffer.duration) {
+    duration -= offset + duration - track.origin[idx].buffer.duration;
   }
   return { offset, duration };
 }
@@ -38,6 +42,7 @@ function words2pieces(project, start, end) {
     const wordType = words[idx].type || "normal";
     if (currentPiece && wordType == currentPiece.type) {
       currentPiece.frameEnd = words[idx].end;
+      currentPiece.end = words[idx].end / S2T_SAMPLE_RATE;
       currentPiece.text = `${currentPiece.text}${words[idx].word}`;
     } else {
       if (currentPiece) {
@@ -46,13 +51,16 @@ function words2pieces(project, start, end) {
           duration:
             currentPiece.type == "delete"
               ? 0
-              : currentPiece.frameEnd - currentPiece.frameStart,
+              : (currentPiece.frameEnd - currentPiece.frameStart) /
+                S2T_SAMPLE_RATE,
         });
       }
       currentPiece = {
         type: wordType,
         frameStart: words[idx].start,
         frameEnd: words[idx].end,
+        start: words[idx].start / S2T_SAMPLE_RATE,
+        end: words[idx].end / S2T_SAMPLE_RATE,
         wordStart: idx + start,
         text: words[idx].word,
       };
@@ -64,7 +72,7 @@ function words2pieces(project, start, end) {
       duration:
         currentPiece.type == "delete"
           ? 0
-          : currentPiece.frameEnd - currentPiece.frameStart,
+          : (currentPiece.frameEnd - currentPiece.frameStart) / S2T_SAMPLE_RATE,
     });
   }
   return pieces;
@@ -79,7 +87,7 @@ export const useProjectStore = defineStore("project", () => {
     }
   });
   async function load() {
-    list.value = await api.call("listProjects");
+    list.value = (await api.call("listProjects")) || [];
     for (let proj of list.value) {
       prepare(proj);
     }
@@ -142,6 +150,7 @@ export const useProjectStore = defineStore("project", () => {
       console.log(project);
     }
   }
+  //把某个段落从某个piece的position的位置分为两段
   function splitParagraph(project, paragraphIdx, piece, position) {
     const wordidx = getWordIndex(project, piece, position);
     if (wordidx >= 0) {
@@ -165,7 +174,7 @@ export const useProjectStore = defineStore("project", () => {
     }
   }
   async function buildBeepBuffer() {
-    const offlineCtx = new OfflineAudioContext(1, 100, 44100);
+    const offlineCtx = new OfflineAudioContext(1, 100, GENURATE_SAMPLE_RATE);
     let g = offlineCtx.createGain();
     g.gain.value = 0.5;
     g.connect(offlineCtx.destination);
@@ -207,8 +216,8 @@ export const useProjectStore = defineStore("project", () => {
           const { offset, duration } = getTrackSource(
             track,
             idx,
-            piece.frameStart,
-            piece.frameEnd
+            piece.start,
+            piece.end
           );
           if (duration > 0) {
             piece.sources.push({
@@ -230,7 +239,7 @@ export const useProjectStore = defineStore("project", () => {
           buffer: beepBuffer,
           when: 0,
           offset: 0,
-          duration: piece.frameEnd - piece.frameStart,
+          duration: piece.duration,
           loop: true,
         },
       ];
@@ -256,7 +265,7 @@ export const useProjectStore = defineStore("project", () => {
           ...piece.sources.map((s) => ({ ...s, when: s.when + when })),
         ];
         when += isNaN(piece.duration)
-          ? piece.frameEnd - piece.frameStart
+          ? piece.end - piece.start
           : piece.duration;
       }
       when += PARAGRAPH_DELAY;
@@ -281,39 +290,40 @@ export const useProjectStore = defineStore("project", () => {
         ...allsource,
         ...piece.sources.map((s) => ({ ...s, when: s.when + when })),
       ];
-      when += isNaN(piece.duration)
-        ? piece.frameEnd - piece.frameStart
-        : piece.duration;
+      when += isNaN(piece.duration) ? piece.end - piece.start : piece.duration;
     }
     play(allsource);
   }
 
-  function projectFrameLen(project) {
+  //返回最长的那个track的长度，支持不同的sampleRate
+  function projectTotalLen(project) {
     let projectLength = 0;
-    for (let track of project.tracks) {
-      let trackLength = 0;
-      for (let origin of track.origin) {
-        trackLength += origin.buffer ? origin.buffer.length : 0;
+    if (project) {
+      for (let track of project.tracks) {
+        let trackLength = 0;
+        for (let origin of track.origin) {
+          trackLength += origin.buffer ? origin.buffer.duration : 0;
+        }
+        if (trackLength > projectLength) projectLength = trackLength;
       }
-      if (trackLength > projectLength) projectLength = trackLength;
     }
     return projectLength;
   }
 
   function playTracks(project, seek = 0, ctx = null) {
-    const projectLength = projectFrameLen(project);
-    seek = Math.ceil(seek * projectLength);
+    const projectLength = projectTotalLen(project);
+    const projectOffset = Math.ceil(seek * projectLength);
 
     const sources = [];
     for (let track of project.tracks) {
-      let seekLeft = seek;
+      let seekLeft = projectOffset;
       let when = 0;
       for (let origin of track.origin) {
         if (seekLeft > 0) {
           const offset = seekLeft;
-          seekLeft -= origin.buffer.length;
+          seekLeft -= origin.buffer.duration;
           if (seekLeft < 0) {
-            const duration = origin.buffer.length - offset;
+            const duration = origin.buffer.duration - offset;
             seekLeft = 0;
             sources.push({
               when,
@@ -327,10 +337,10 @@ export const useProjectStore = defineStore("project", () => {
           sources.push({
             when,
             offset: 0,
-            duration: origin.buffer.length,
+            duration: origin.buffer.duration,
             buffer: origin.buffer,
           });
-          when += origin.buffer.length;
+          when += origin.buffer.duration;
         }
       }
       if (when > projectLength) projectLength = when;
@@ -351,9 +361,9 @@ export const useProjectStore = defineStore("project", () => {
       node.loop = !!loop;
       node.connect(g);
       return {
-        when: when / buffer.sampleRate,
-        offset: offset / buffer.sampleRate,
-        duration: duration / buffer.sampleRate,
+        when,
+        offset,
+        duration,
         node,
       };
     });
@@ -381,6 +391,7 @@ export const useProjectStore = defineStore("project", () => {
       cancelAnimationFrame(rAF);
     };
   }
+  //获取某个piece某个position的单词的索引
   function getWordIndex(project, piece, position) {
     let len = 0,
       idx = piece.wordStart;
@@ -392,7 +403,7 @@ export const useProjectStore = defineStore("project", () => {
 
   function getPieceDuration(piece) {
     return isNaN(piece.duration)
-      ? piece.frameEnd - piece.frameStart
+      ? (piece.frameEnd - piece.frameStart) / S2T_SAMPLE_RATE
       : piece.duration;
   }
 
@@ -403,6 +414,7 @@ export const useProjectStore = defineStore("project", () => {
     );
   }
 
+  //合并两个段落
   function mergeBackParagraph(project, idx) {
     if (idx > 0) {
       const start = project.paragraphs[idx - 1].start;
@@ -427,6 +439,7 @@ export const useProjectStore = defineStore("project", () => {
     await playParagraph(project, dummyParagraph);
   }
 
+  // 不用考虑word类型，只要有word就播放
   async function playWordsRaw(project, from, to) {
     const buffer = await getWordsBuffer(project, from, to);
     if (buffer) {
@@ -447,7 +460,7 @@ export const useProjectStore = defineStore("project", () => {
     const offlineCtx = new OfflineAudioContext(
       2,
       lastSource.when + lastSource.duration,
-      lastSource.buffer.sampleRate
+      GENURATE_SAMPLE_RATE
     );
     const g = offlineCtx.createGain();
     g.gain.value = 1;
@@ -460,9 +473,9 @@ export const useProjectStore = defineStore("project", () => {
       node.loop = !!loop;
       node.connect(g);
       nodes.push({
-        when: when / buffer.sampleRate,
-        offset: offset / buffer.sampleRate,
-        duration: duration / buffer.sampleRate,
+        when,
+        offset,
+        duration,
         node,
       });
     }
@@ -619,12 +632,12 @@ export const useProjectStore = defineStore("project", () => {
   async function recognition(project) {
     recognitionProgress.value = 0;
     let screenLock = await navigator.wakeLock.request("screen");
-    const lenlimit = projectFrameLen(project);
-    const offlineCtx = new OfflineAudioContext(1, lenlimit, 44100);
+    const lenlimit = projectTotalLen(project);
+    const offlineCtx = new OfflineAudioContext(1, lenlimit, S2T_SAMPLE_RATE);
     playTracks(project, 0, offlineCtx);
     const buffer = await offlineCtx.startRendering();
     const s2t = await api.call("recognition", project.id, toWav(buffer));
-    project.words = formatWords(s2t, lenlimit);
+    project.words = formatWords(s2t, Math.round(lenlimit * S2T_SAMPLE_RATE));
     await saveWords(project);
     screenLock.release();
     recognitionProgress.value = -1;
@@ -663,7 +676,6 @@ export const useProjectStore = defineStore("project", () => {
       (r, p) => [...r, ...p.pieces.filter((l) => l.type == "hot")],
       []
     );
-    console.log("hotlines:", lines);
     return lines;
   }
   load();
@@ -700,7 +712,7 @@ export const useProjectStore = defineStore("project", () => {
     deleteProject,
     saveProject,
     recognition,
-    projectFrameLen,
+    projectTotalLen,
     getContentBlocks,
     getHotLines,
   };
@@ -711,11 +723,11 @@ if (import.meta.vitest) {
   describe("", async () => {
     const { setActivePinia, createPinia } = await import("pinia");
     setActivePinia(createPinia());
-    global.api = { call: () => {} };
+    global.api = { call: () => {}, on: () => {} };
     const store = useProjectStore();
     it("getTrackSource", () => {
       expect(
-        getTrackSource({ origin: [{ buffer: { length: 100 } }] }, 0, 0, 100)
+        getTrackSource({ origin: [{ buffer: { duration: 100 } }] }, 0, 0, 100)
       ).toStrictEqual({
         offset: 0,
         duration: 100,
@@ -723,7 +735,10 @@ if (import.meta.vitest) {
       expect(
         getTrackSource(
           {
-            origin: [{ buffer: { length: 100 } }, { buffer: { length: 100 } }],
+            origin: [
+              { buffer: { duration: 100 } },
+              { buffer: { duration: 100 } },
+            ],
           },
           0,
           0,
@@ -736,7 +751,10 @@ if (import.meta.vitest) {
       expect(
         getTrackSource(
           {
-            origin: [{ buffer: { length: 100 } }, { buffer: { length: 100 } }],
+            origin: [
+              { buffer: { duration: 100 } },
+              { buffer: { duration: 100 } },
+            ],
           },
           0,
           100,
@@ -749,7 +767,10 @@ if (import.meta.vitest) {
       expect(
         getTrackSource(
           {
-            origin: [{ buffer: { length: 100 } }, { buffer: { length: 100 } }],
+            origin: [
+              { buffer: { duration: 100 } },
+              { buffer: { duration: 100 } },
+            ],
           },
           1,
           0,
@@ -762,7 +783,10 @@ if (import.meta.vitest) {
       expect(
         getTrackSource(
           {
-            origin: [{ buffer: { length: 100 } }, { buffer: { length: 100 } }],
+            origin: [
+              { buffer: { duration: 100 } },
+              { buffer: { duration: 100 } },
+            ],
           },
           1,
           120,
@@ -775,7 +799,10 @@ if (import.meta.vitest) {
       expect(
         getTrackSource(
           {
-            origin: [{ buffer: { length: 100 } }, { buffer: { length: 100 } }],
+            origin: [
+              { buffer: { duration: 100 } },
+              { buffer: { duration: 100 } },
+            ],
           },
           1,
           120,
@@ -801,6 +828,12 @@ if (import.meta.vitest) {
         ],
       };
       store.splitParagraph(project, 0, { wordStart: 0 }, 1);
+      for (let p of project.paragraphs) {
+        for (let i in p.pieces) {
+          const { start, end, duration, ...others } = p.pieces[i];
+          p.pieces[i] = others;
+        }
+      }
       expect(project.paragraphs).toStrictEqual([
         {
           start: 0,
@@ -834,7 +867,7 @@ if (import.meta.vitest) {
     });
     it("getWordIndex", () => {
       expect(
-        getWordIndex(
+        store.getWordIndex(
           { words: [{ word: "a" }, { word: "b" }] },
           { wordStart: 0 },
           1
@@ -842,18 +875,18 @@ if (import.meta.vitest) {
       ).toBe(1);
     });
     it("words2pieces", () => {
-      expect(
-        words2pieces(
-          {
-            words: [
-              { start: 1, end: 2, word: "a" },
-              { start: 2, end: 3, word: "b" },
-            ],
-          },
-          0,
-          1
-        )
-      ).toStrictEqual([
+      var list = words2pieces(
+        {
+          words: [
+            { start: 1, end: 2, word: "a" },
+            { start: 2, end: 3, word: "b" },
+          ],
+        },
+        0,
+        1
+      );
+      const { start, end, duration, ...others } = list[0];
+      expect([others]).toStrictEqual([
         {
           frameStart: 1,
           frameEnd: 3,
@@ -862,18 +895,21 @@ if (import.meta.vitest) {
           wordStart: 0,
         },
       ]);
-      expect(
-        words2pieces(
-          {
-            words: [
-              { start: 1, end: 2, word: "a" },
-              { start: 2, end: 3, word: "b", type: "delete" },
-            ],
-          },
-          0,
-          1
-        )
-      ).toStrictEqual([
+      list = words2pieces(
+        {
+          words: [
+            { start: 1, end: 2, word: "a" },
+            { start: 2, end: 3, word: "b", type: "delete" },
+          ],
+        },
+        0,
+        1
+      );
+      for (let i in list) {
+        const { start, end, duration, ...others } = list[i];
+        list[i] = others;
+      }
+      expect(list).toStrictEqual([
         {
           frameStart: 1,
           frameEnd: 2,

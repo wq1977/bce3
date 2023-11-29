@@ -95,6 +95,7 @@ const api = {
           projs.push({
             ...proj,
             id: file,
+            cfg: proj.cfg || {},
           });
         }
       });
