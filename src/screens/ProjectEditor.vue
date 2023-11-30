@@ -115,6 +115,9 @@ function vols2line(piece) {
 }
 
 async function doPlay() {
+    if (playProgress.value[0] >= 99) {
+        playProgress.value = [0]
+    }
     await store.loadTracks(project.value);
     store.play(playSources.value, playProgress.value[0] / 100)
 }
@@ -129,7 +132,8 @@ async function doPlay() {
                     :data-type="piece.type" class="absolute h-[100px] bg-gray-200 data-[type='hot']:bg-orange-200">
                 </div>
             </div>
-            <div v-if="project.cfg.piantou && project.cfg.usePianTou" class="flex relative  bg-green-100 h-[50px]">
+            <div v-if="project.cfg.piantou && project.cfg.usePianTou"
+                class="flex relative  bg-green-100 h-[50px] border-t border-white">
                 <div v-for="piece in playSources.filter(p => p.type == 'piantou')"
                     :style="{ left: `${piece.when * 100 / totalLen}%`, width: `${piece.duration * 100 / totalLen}%` }"
                     class="absolute h-[100px] bg-red-200">
@@ -140,7 +144,8 @@ async function doPlay() {
                         :y2="`${line.y2}%`" style="stroke: red;stroke-width: 2;"></line>
                 </svg>
             </div>
-            <div v-if="project.cfg.bgm && project.cfg.useBGM" class="flex relative overflow-x-auto bg-green-100 h-[50px]">
+            <div v-if="project.cfg.bgm && project.cfg.useBGM"
+                class="flex relative overflow-x-auto bg-green-100 h-[50px] border-t border-white">
                 <div v-for="piece in playSources.filter(p => p.type == 'bgm')"
                     :style="{ left: `${piece.when * 100 / totalLen}%`, width: `${piece.duration * 100 / totalLen}%` }"
                     class="absolute h-[100px] bg-blue-200">
@@ -151,7 +156,8 @@ async function doPlay() {
                         :y2="`${line.y2}%`" style="stroke: red;stroke-width: 2;"></line>
                 </svg>
             </div>
-            <div v-if="project.cfg.pianwei && project.cfg.usePianWei" class="flex relative  bg-green-100 h-[50px]">
+            <div v-if="project.cfg.pianwei && project.cfg.usePianWei"
+                class="flex relative  bg-green-100 h-[50px] border-t border-white">
                 <div v-for="piece in playSources.filter(p => p.type == 'pianwei')"
                     :style="{ left: `${piece.when * 100 / totalLen}%`, width: `${piece.duration * 100 / totalLen}%` }"
                     class="absolute h-[100px] bg-yellow-200">
@@ -170,8 +176,7 @@ async function doPlay() {
                 <SliderTrack class="bg-gray-100 relative grow rounded-full h-[3px]">
                     <SliderRange class="absolute bg-white rounded-full h-full" />
                 </SliderTrack>
-                <SliderThumb
-                    class="block w-5 h-5 bg-white shadow-[0_2px_10px] shadow-blackA7 rounded-[10px] hover:bg-violet3 focus:outline-none"
+                <SliderThumb class="block w-5 h-5 bg-white rounded-[10px] hover:bg-violet3 focus:outline-none"
                     aria-label="Volume" />
             </SliderRoot>
         </div>
@@ -183,15 +188,14 @@ async function doPlay() {
                     <SliderTrack class="bg-gray-100 relative grow rounded-full h-[3px]">
                         <SliderRange class="absolute bg-white rounded-full h-full" />
                     </SliderTrack>
-                    <SliderThumb
-                        class="block w-5 h-5 bg-white shadow-[0_2px_10px] shadow-blackA7 rounded-[10px] hover:bg-violet3 focus:outline-none"
+                    <SliderThumb class="block w-5 h-5 bg-white  rounded-[10px] hover:bg-violet3 focus:outline-none"
                         aria-label="Volume" />
                 </SliderRoot>
             </fieldset>
             <fieldset class="mb-[15px] flex items-center">
                 <label class=" w-[90px] text-right text-[15px] mr-3" for="name"> 片头曲 </label>
                 <CheckboxRoot v-model:checked="project.cfg.usePianTou" @update:checked="dosave"
-                    class="mr-2 shadow-gray-700 hover:bg-green-300 flex h-[25px] w-[25px] appearance-none items-center justify-center rounded-[4px] bg-white shadow-[0_2px_10px] outline-none">
+                    class="mr-2 shadow-gray-700 hover:bg-green-300 flex h-[25px] w-[25px] appearance-none items-center justify-center rounded-[4px] bg-white  outline-none">
                     <CheckboxIndicator class="bg-white h-full w-full rounded flex items-center justify-center">
                         <Icon icon="radix-icons:check" class="h-3.5 w-3.5 text-grass11" />
                     </CheckboxIndicator>
@@ -208,7 +212,7 @@ async function doPlay() {
             <fieldset class="mb-[15px] flex items-center">
                 <label class=" w-[90px] text-right text-[15px] mr-3" for="name"> 背景音乐 </label>
                 <CheckboxRoot v-model:checked="project.cfg.useBGM" @update:checked="dosave"
-                    class="mr-2 shadow-gray-700 hover:bg-green-300 flex h-[25px] w-[25px] appearance-none items-center justify-center rounded-[4px] bg-white shadow-[0_2px_10px] outline-none">
+                    class="mr-2 shadow-gray-700 hover:bg-green-300 flex h-[25px] w-[25px] appearance-none items-center justify-center rounded-[4px] bg-white outline-none">
                     <CheckboxIndicator class="bg-white h-full w-full rounded flex items-center justify-center">
                         <Icon icon="radix-icons:check" class="h-3.5 w-3.5 text-grass11" />
                     </CheckboxIndicator>
@@ -221,17 +225,24 @@ async function doPlay() {
                     <input id="music-bg" class="hidden" @change="onSelectBGM" accept=".wav, .mp3, .m4a" type="file" />
                 </label>
                 <CheckboxRoot v-if="project.cfg.bgm" v-model:checked="project.cfg.bgm.snake" @update:checked="dosave"
-                    class="mr-2 shadow-gray-700 hover:bg-green-300 flex h-[25px] w-[25px] appearance-none items-center justify-center rounded-[4px] bg-white shadow-[0_2px_10px] outline-none">
+                    class="mr-2 shadow-gray-700 hover:bg-green-300 flex h-[25px] w-[25px] appearance-none items-center justify-center rounded-[4px] bg-white  outline-none">
                     <CheckboxIndicator class="bg-white h-full w-full rounded flex items-center justify-center">
                         <Icon icon="radix-icons:check" class="h-3.5 w-3.5 text-grass11" />
                     </CheckboxIndicator>
                 </CheckboxRoot>
-                <span class="select-none">调整音量</span>
+                <span class="select-none mr-2">调整音量</span>
+                <CheckboxRoot v-if="project.cfg.bgm" v-model:checked="project.cfg.bgm.margin" @update:checked="dosave"
+                    class="mr-2 shadow-gray-700 hover:bg-green-300 flex h-[25px] w-[25px] appearance-none items-center justify-center rounded-[4px] bg-white outline-none">
+                    <CheckboxIndicator class="bg-white h-full w-full rounded flex items-center justify-center">
+                        <Icon icon="radix-icons:check" class="h-3.5 w-3.5 text-grass11" />
+                    </CheckboxIndicator>
+                </CheckboxRoot>
+                <span class="select-none">左右边界</span>
             </fieldset>
             <fieldset class="mb-[15px] flex items-center">
                 <label class=" w-[90px] text-right text-[15px] mr-3" for="name"> 片尾曲 </label>
                 <CheckboxRoot v-model:checked="project.cfg.usePianWei" @update:checked="dosave"
-                    class="mr-2 shadow-gray-700 hover:bg-green-300 flex h-[25px] w-[25px] appearance-none items-center justify-center rounded-[4px] bg-white shadow-[0_2px_10px] outline-none">
+                    class="mr-2 shadow-gray-700 hover:bg-green-300 flex h-[25px] w-[25px] appearance-none items-center justify-center rounded-[4px] bg-white  outline-none">
                     <CheckboxIndicator class="bg-white h-full w-full rounded flex items-center justify-center">
                         <Icon icon="radix-icons:check" class="h-3.5 w-3.5 text-grass11" />
                     </CheckboxIndicator>
@@ -244,10 +255,18 @@ async function doPlay() {
                     <input id="music-pianwei" class="hidden" @change="onSelectPianWei" accept=".wav, .mp3, .m4a"
                         type="file" />
                 </label>
+                <CheckboxRoot v-if="project.cfg.pianwei" v-model:checked="project.cfg.pianwei.fadein"
+                    @update:checked="dosave"
+                    class="mr-2 shadow-gray-700 hover:bg-green-300 flex h-[25px] w-[25px] appearance-none items-center justify-center rounded-[4px] bg-white outline-none">
+                    <CheckboxIndicator class="bg-white h-full w-full rounded flex items-center justify-center">
+                        <Icon icon="radix-icons:check" class="h-3.5 w-3.5 text-grass11" />
+                    </CheckboxIndicator>
+                </CheckboxRoot>
+                <span class="select-none">淡入</span>
             </fieldset>
             <label v-if="project" class="flex flex-row gap-4 items-center [&>.checkbox]:hover:bg-red-100">
                 <CheckboxRoot v-model:checked="project.cfg.showHots" @update:checked="dosave"
-                    class="shadow-gray-700 hover:bg-green-300 flex h-[25px] w-[25px] appearance-none items-center justify-center rounded-[4px] bg-white shadow-[0_2px_10px] outline-none">
+                    class="shadow-gray-700 hover:bg-green-300 flex h-[25px] w-[25px] appearance-none items-center justify-center rounded-[4px] bg-white outline-none">
                     <CheckboxIndicator class="bg-white h-full w-full rounded flex items-center justify-center">
                         <Icon icon="radix-icons:check" class="h-3.5 w-3.5 text-grass11" />
                     </CheckboxIndicator>

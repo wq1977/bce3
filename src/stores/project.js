@@ -447,11 +447,16 @@ export const useProjectStore = defineStore("project", () => {
       if (!buffers[project.cfg.bgm.name]) return [];
       bgmSource = {
         type: "bgm",
-        when,
+        when: project.cfg.bgm.margin ? when + 1 : when,
         offset: 0,
         buffer: buffers[project.cfg.bgm.name],
         loop: true,
-        volumns: [{ at: when, volumn: project.cfg.bgm.snake ? 0.9 : 0.1 }],
+        volumns: [
+          {
+            at: project.cfg.bgm.margin ? when + 1 : when,
+            volumn: project.cfg.bgm.snake ? 0.9 : 0.1,
+          },
+        ],
       };
       allsource.push(bgmSource);
     }
@@ -491,7 +496,12 @@ export const useProjectStore = defineStore("project", () => {
     }
 
     if (bgmSource) {
-      bgmSource.duration = when - bgmSource.when;
+      if (project.cfg.pianwei && project.cfg.pianwei.fadein) {
+        bgmSource.duration = when - bgmSource.when - paragraphDelay;
+      } else {
+        bgmSource.duration = when - bgmSource.when;
+      }
+      bgmSource.duration -= project.cfg.bgm.margin ? 1 : 0;
     }
 
     // 片尾曲（如果有）将完整播放，可以指定一个提前播放量，如果有提前播放，音乐将自动控制
@@ -499,11 +509,17 @@ export const useProjectStore = defineStore("project", () => {
       if (!buffers[project.cfg.pianwei.name]) return [];
       const pianwei = {
         type: "pianwei",
-        when,
+        when: project.cfg.pianwei.fadein ? when - paragraphDelay : when,
         offset: 0,
         buffer: buffers[project.cfg.pianwei.name],
         duration: buffers[project.cfg.pianwei.name].duration,
-        volumns: [{ at: when, volumn: 0.9 }],
+        volumns: project.cfg.pianwei.fadein
+          ? [
+              { at: when - paragraphDelay, volumn: 0.1 },
+              { at: when, volumn: 0.1 },
+              { at: when + 1, volumn: 0.9 },
+            ]
+          : [{ at: when, volumn: 0.9 }],
       };
       allsource.push(pianwei);
     }
@@ -530,10 +546,10 @@ export const useProjectStore = defineStore("project", () => {
         }));
         const newVolumns = [];
         for (let i = 0; i < source.volumns.length; i++) {
-          if (source.volumns[i] < 0) {
+          if (source.volumns[i].at < 0) {
             if (i == source.volumns.length - 1) {
               newVolumns.push({ ...source.volumns[i], at: 0 });
-            } else if (source.volumns[i + 1] >= 0) {
+            } else if (source.volumns[i + 1].at >= 0) {
               newVolumns.push({
                 ...source.volumns[i],
                 at: 0,
@@ -550,6 +566,7 @@ export const useProjectStore = defineStore("project", () => {
             newVolumns.push(source.volumns[i]);
           }
         }
+        source.volumns = newVolumns;
       }
       if (end > seekPosition) {
         if (begin <= seekPosition) {
