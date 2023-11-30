@@ -143,7 +143,7 @@ function pieceMouseup(e) {
             const wordBase = store.getWordIndex(project.value, project.value.paragraphs[paragraphIdxBase].pieces[pieceIdxBase], vbase)
             const vextent = selection.extentOffset
             const wordExtent = store.getWordIndex(project.value, project.value.paragraphs[paragraphIdxExtent].pieces[pieceIdxExtent], vextent)
-            selWordStart.value = Math.min(wordBase, wordExtent)
+            selWordStart.value = Math.max(0, Math.min(wordBase, wordExtent) - 1)
             selWordEnd.value = Math.max(wordBase, wordExtent)
             selParagraph.value = paragraphIdxBase
         } else {
