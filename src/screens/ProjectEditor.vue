@@ -6,6 +6,7 @@ import { useRoute } from 'vue-router';
 const store = useProjectStore()
 const route = useRoute()
 const project = ref(null);
+const forceSeed = ref(1)
 if (!store.list.length) {
     store.load().then(init)
 } else {
@@ -17,7 +18,7 @@ async function init() {
     await store.loadTracks(project.value)
 }
 
-const playSources = computed(() => store.getProjectSources(project.value))
+const playSources = computed(() => forceSeed.value && store.getProjectSources(project.value))
 const totalLen = computed(() => {
     const sorted = playSources.value.sort((a, b) => a.when + a.duration - b.when - b.duration)
     const lastPiece = sorted[sorted.length - 1]
@@ -54,21 +55,27 @@ async function onSelectPianTou(e) {
     const info = await loadAudio(e)
     project.value.cfg.piantou = { ...info }
     store.saveProject(project.value)
-    store.loadTracks()
+    store.resetMusicBuffer([info.name])
+    await store.loadTracks(project.value)
+    forceSeed.value++
 }
 
 async function onSelectPianWei(e) {
     const info = await loadAudio(e)
     project.value.cfg.pianwei = { ...info }
     store.saveProject(project.value)
-    store.loadTracks()
+    store.resetMusicBuffer([info.name])
+    await store.loadTracks(project.value)
+    forceSeed.value++
 }
 
 async function onSelectBGM(e) {
     const info = await loadAudio(e)
     project.value.cfg.bgm = { ...info }
     store.saveProject(project.value)
-    store.loadTracks()
+    store.resetMusicBuffer([info.name])
+    await store.loadTracks(project.value)
+    forceSeed.value++
 }
 
 const playProgress = ref([0])

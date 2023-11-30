@@ -907,6 +907,11 @@ export const useProjectStore = defineStore("project", () => {
     );
     return lines;
   }
+  function resetMusicBuffer(arr) {
+    for (let key of arr) {
+      delete buffers[key];
+    }
+  }
   load();
   api.on("recognition-progress", "project-store", function (p) {
     recognitionProgress.value = p.end / p.duration;
@@ -947,6 +952,7 @@ export const useProjectStore = defineStore("project", () => {
     getHotLines,
     getContentBlocks,
     getProjectSources,
+    resetMusicBuffer,
   };
 });
 
