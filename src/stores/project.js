@@ -380,58 +380,62 @@ export const useProjectStore = defineStore("project", () => {
         const hotlines = getHotLines(project);
         let currentHotEndAt = 0;
         when += HOTLINE_PADDING_LEFT;
-        for (let piece of hotlines) {
-          if (!piece.sources.length) continue;
-          let pieceEndAt = piece.wordStart;
-          while (
-            pieceEndAt < project.words.length &&
-            project.words[pieceEndAt].ishot
-          ) {
-            pieceEndAt++;
-          }
+        if (project.cfg.showHots) {
+          for (let piece of hotlines) {
+            if (!piece.sources.length) continue;
+            let pieceEndAt = piece.wordStart;
+            while (
+              pieceEndAt < project.words.length &&
+              project.words[pieceEndAt].ishot
+            ) {
+              pieceEndAt++;
+            }
 
-          if (pieceEndAt != currentHotEndAt) {
-            if (currentHotEndAt != 0) {
+            if (pieceEndAt != currentHotEndAt) {
+              if (currentHotEndAt != 0) {
+                piantouSource.volumns.push({
+                  at: when + CHANGE_VOLUMN_DURATION,
+                  volumn: 0.1,
+                });
+                piantouSource.volumns.push({
+                  at: when + CHANGE_VOLUMN_DURATION * 2,
+                  volumn: 0.9,
+                });
+                when += HOTLINE_PADDING_LEFT;
+              }
               piantouSource.volumns.push({
-                at: when + CHANGE_VOLUMN_DURATION,
-                volumn: 0.1,
-              });
-              piantouSource.volumns.push({
-                at: when + CHANGE_VOLUMN_DURATION * 2,
+                at: when - CHANGE_VOLUMN_DURATION * 2,
                 volumn: 0.9,
               });
-              when += HOTLINE_PADDING_LEFT;
+              piantouSource.volumns.push({
+                at: when - CHANGE_VOLUMN_DURATION,
+                volumn: 0.1,
+              });
+              currentHotEndAt = pieceEndAt;
             }
-            piantouSource.volumns.push({
-              at: when - CHANGE_VOLUMN_DURATION * 2,
-              volumn: 0.9,
-            });
-            piantouSource.volumns.push({
-              at: when - CHANGE_VOLUMN_DURATION,
-              volumn: 0.1,
-            });
-            currentHotEndAt = pieceEndAt;
+            for (let source of piece.sources) {
+              allsource.push({
+                ...source,
+                type: "hot",
+                when,
+              });
+            }
+            when += piece.sources[0].duration;
           }
-          for (let source of piece.sources) {
-            allsource.push({
-              ...source,
-              type: "hot",
-              when,
-            });
+          piantouSource.volumns.push({
+            at: when + CHANGE_VOLUMN_DURATION,
+            volumn: 0.1,
+          });
+          piantouSource.volumns.push({
+            at: when + CHANGE_VOLUMN_DURATION * 2,
+            volumn: 0.9,
+          });
+          if (when < piantouSource.when + piantouSource.duration) {
+            when = piantouSource.when + piantouSource.duration;
           }
-          when += piece.sources[0].duration;
         }
-        piantouSource.volumns.push({
-          at: when + CHANGE_VOLUMN_DURATION,
-          volumn: 0.1,
-        });
-        piantouSource.volumns.push({
-          at: when + CHANGE_VOLUMN_DURATION * 2,
-          volumn: 0.9,
-        });
-        if (when < piantouSource.when + piantouSource.duration) {
+        if (when < piantouSource.when + piantouSource.duration)
           when = piantouSource.when + piantouSource.duration;
-        }
       }
     }
     if (when < paragraphDelay) when = paragraphDelay;
