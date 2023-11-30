@@ -240,9 +240,8 @@ export const useProjectStore = defineStore("project", () => {
   }
 
   function preparePieceAudioSource(project, piece) {
-    if (piece.sources) return;
     if (!project.tracks[0].origin[0].buffer) return;
-    if (!piece.type || piece.type == "normal" || piece.type == "hot") {
+    if (!piece.type || piece.type == "normal") {
       piece.sources = [];
       for (let track of project.tracks) {
         let when = 0;
@@ -293,21 +292,23 @@ export const useProjectStore = defineStore("project", () => {
     );
   }
 
-  async function playParagraph(project, paragraph) {
-    await loadTracks(project);
+  function prepareParagraphPieceForPlay(project, paragraph) {
     paragraph.pieces.forEach((piece) =>
       preparePieceAudioSource(project, piece)
     );
-
-    let allsource = [];
     let when = 0;
     for (let piece of paragraph.pieces) {
-      allsource = [
-        ...allsource,
-        ...piece.sources.map((s) => ({ ...s, when: s.when + when })),
-      ];
+      (piece.sources || []).forEach((s) => {
+        s.when = s.when + when;
+      });
       when += isNaN(piece.duration) ? piece.end - piece.start : piece.duration;
     }
+  }
+
+  async function playParagraph(project, paragraph) {
+    await loadTracks(project);
+    prepareParagraphPieceForPlay(project, paragraph);
+    let allsource = paragraph.pieces.reduce((r, p) => [...r, ...p.sources], []);
     play(allsource);
   }
 
@@ -351,9 +352,7 @@ export const useProjectStore = defineStore("project", () => {
       .filter((p) => p.comment)
       .sort((a, b) => a.sequence - b.sequence);
     for (let paragraph of validParagraphs) {
-      paragraph.pieces.forEach((piece) =>
-        preparePieceAudioSource(project, piece)
-      );
+      prepareParagraphPieceForPlay(project, paragraph);
     }
     const CHANGE_VOLUMN_DURATION = 1;
     let allsource = [];
@@ -460,7 +459,7 @@ export const useProjectStore = defineStore("project", () => {
       for (let piece of paragraph.pieces) {
         allsource = [
           ...allsource,
-          ...piece.sources.map((s) => ({ ...s, when: s.when + when })),
+          ...(piece.sources || []).map((s) => ({ ...s, when: s.when + when })),
         ];
       }
       when += pDuration;
@@ -499,13 +498,41 @@ export const useProjectStore = defineStore("project", () => {
     for (let source of sources) {
       const begin = source.when;
       const end = source.when + source.duration;
+      if (source.volumns) {
+        source.volumns = source.volumns.map((v) => ({
+          ...v,
+          at: v.at - seekPosition,
+        }));
+        const newVolumns = [];
+        for (let i = 0; i < source.volumns.length; i++) {
+          if (source.volumns[i] < 0) {
+            if (i == source.volumns.length - 1) {
+              newVolumns.push({ ...source.volumns[i], at: 0 });
+            } else if (source.volumns[i + 1] >= 0) {
+              newVolumns.push({
+                ...source.volumns[i],
+                at: 0,
+                volumn:
+                  source.volumns[i].volumn +
+                  ((source.volumns[i + 1].volumn - source.volumns[i].volumn) *
+                    (0 - source.volumns[i].at)) /
+                    (source.volumns[i + 1].at - source.volumns[i].at),
+              });
+            } else {
+              //no need this volumn setting, skip
+            }
+          } else {
+            newVolumns.push(source.volumns[i]);
+          }
+        }
+      }
       if (end > seekPosition) {
         if (begin <= seekPosition) {
           const needTrim = seekPosition - begin;
           newsources.push({
             ...source,
             when: 0,
-            offset: needTrim,
+            offset: source.offset + needTrim,
             duration: source.duration - needTrim,
           });
         } else {
@@ -530,22 +557,35 @@ export const useProjectStore = defineStore("project", () => {
     let g = ctx.createGain();
     g.gain.value = 0.5;
     g.connect(ctx.destination);
-    const nodes = sources.map(({ when, offset, duration, buffer, loop }) => {
-      const node = ctx.createBufferSource();
-      node.buffer = buffer;
-      node.loop = !!loop;
-      node.connect(g);
-      return {
-        when,
-        offset,
-        duration,
-        node,
-      };
-    });
-    nodes.sort((a, b) => a.when + a.duration - b.when - b.duration);
-    const totalSecs =
-      nodes[nodes.length - 1].when + nodes[nodes.length - 1].duration;
-
+    const nodes = sources.map(
+      ({ when, offset, duration, buffer, loop, volumns }) => {
+        const node = ctx.createBufferSource();
+        node.buffer = buffer;
+        node.loop = !!loop;
+        if (volumns) {
+          let localG = ctx.createGain();
+          localG.gain.value = volumns[volumns.length - 1].volumn;
+          for (let idx = 0; idx < volumns.length; idx++) {
+            let volumn = volumns[idx];
+            if (idx == 0) {
+              localG.gain.setValueAtTime(volumn.volumn, volumn.at);
+            } else {
+              localG.gain.linearRampToValueAtTime(volumn.volumn, volumn.at);
+            }
+          }
+          localG.connect(g);
+          node.connect(localG);
+        } else {
+          node.connect(g);
+        }
+        return {
+          when,
+          offset,
+          duration,
+          node,
+        };
+      }
+    );
     nodes.forEach(({ when, offset, duration, node }) => {
       node.start(when, offset, duration);
     });
@@ -585,7 +625,34 @@ export const useProjectStore = defineStore("project", () => {
   function getParagraphDuration(paragraph) {
     return paragraph.pieces.reduce((r, i) => r + getPieceDuration(i), 0);
   }
+  /***
+   * 一个播客由多个音轨组成，最主要的就是内容音轨，它是根据项目内容自动生成的
+   * 默认的内容包括已经分段好的段落内容和已经设置好的金句段落，可以统一设置金句的
+   * 起始终止间隔时间，金句间隔时间，段落的起始终止间隔时间和段落的间隔时间
+   */
+  function getContentBlocks(project) {
+    if (!project) return [];
+    if (!project.paragraphs) return [];
 
+    const result = [];
+    for (let index = 0; index < project.paragraphs.length; index++) {
+      const p = project.paragraphs[index];
+      if (p.comment) {
+        result.push({
+          title: p.comment,
+          index,
+          sequence: p.sequence,
+        });
+      }
+    }
+    const list = result.sort(
+      (a, b) => (a.sequence || a.index) - (b.sequence || b.index)
+    );
+    for (let value of list) {
+      value.duration = getParagraphDuration(project.paragraphs[value.index]);
+    }
+    return list;
+  }
   //合并两个段落
   function mergeBackParagraph(project, idx) {
     if (idx > 0) {
@@ -878,6 +945,7 @@ export const useProjectStore = defineStore("project", () => {
     recognition,
     projectTotalLen,
     getHotLines,
+    getContentBlocks,
     getProjectSources,
   };
 });
