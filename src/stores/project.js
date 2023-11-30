@@ -472,7 +472,7 @@ export const useProjectStore = defineStore("project", () => {
       const paragraph = validParagraphs[idx];
       lastParagraphDuration = getParagraphDuration(paragraph);
       when += paragraphDelay;
-      if (project.cfg.bgm.snake) {
+      if (project.cfg.bgm && project.cfg.bgm.snake) {
         bgmSource.volumns.push({
           at: when - 2 * CHANGE_VOLUMN_DURATION,
           volumn: bgmHighVol,
@@ -489,7 +489,11 @@ export const useProjectStore = defineStore("project", () => {
         ];
       }
       when += lastParagraphDuration;
-      if (project.cfg.bgm.snake && idx !== validParagraphs.length - 1) {
+      if (
+        project.cfg.bgm &&
+        project.cfg.bgm.snake &&
+        idx !== validParagraphs.length - 1
+      ) {
         bgmSource.volumns.push({
           at: when + CHANGE_VOLUMN_DURATION,
           volumn: bgmLowVol,
@@ -1171,9 +1175,8 @@ if (import.meta.vitest) {
             comment: "test",
             pieces: [
               {
-                from: 1,
-                to: 2,
-                sources: [{ when: 1, offset: 0, duration: 5, buffer: {} }],
+                start: 1,
+                end: 2,
               },
             ],
           },
