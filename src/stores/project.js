@@ -615,35 +615,7 @@ export const useProjectStore = defineStore("project", () => {
     let g = ctx.createGain();
     g.gain.value = 0.5;
     g.connect(ctx.destination);
-    const nodes = sources.map(
-      ({ when, offset, duration, buffer, loop, volumns }) => {
-        const node = ctx.createBufferSource();
-        node.buffer = buffer;
-        node.loop = !!loop;
-        if (volumns) {
-          let localG = ctx.createGain();
-          localG.gain.value = volumns[volumns.length - 1].volumn;
-          for (let idx = 0; idx < volumns.length; idx++) {
-            let volumn = volumns[idx];
-            if (idx == 0) {
-              localG.gain.setValueAtTime(volumn.volumn, volumn.at);
-            } else {
-              localG.gain.linearRampToValueAtTime(volumn.volumn, volumn.at);
-            }
-          }
-          localG.connect(g);
-          node.connect(localG);
-        } else {
-          node.connect(g);
-        }
-        return {
-          when,
-          offset,
-          duration,
-          node,
-        };
-      }
-    );
+    const nodes = getPlayNodes(ctx, g, sources);
     nodes.forEach(({ when, offset, duration, node }) => {
       node.start(when, offset, duration);
     });
@@ -751,31 +723,47 @@ export const useProjectStore = defineStore("project", () => {
     }
   }
 
+  function getPlayNodes(ctx, dest, sources) {
+    return sources.map(({ when, offset, duration, buffer, loop, volumns }) => {
+      const node = ctx.createBufferSource();
+      node.buffer = buffer;
+      node.loop = !!loop;
+      if (volumns) {
+        let localG = ctx.createGain();
+        localG.gain.value = volumns[volumns.length - 1].volumn;
+        for (let idx = 0; idx < volumns.length; idx++) {
+          let volumn = volumns[idx];
+          if (idx == 0) {
+            localG.gain.setValueAtTime(volumn.volumn, volumn.at);
+          } else {
+            localG.gain.linearRampToValueAtTime(volumn.volumn, volumn.at);
+          }
+        }
+        localG.connect(dest);
+        node.connect(localG);
+      } else {
+        node.connect(dest);
+      }
+      return {
+        when,
+        offset,
+        duration,
+        node,
+      };
+    });
+  }
+
   async function getSourcesBuffer(sources) {
-    sources.sort((a, b) => a.when + a.duration - b.when - b.duration);
-    const lastSource = sources[sources.length - 1];
+    const totalLen = getSourcesLen(sources);
     const offlineCtx = new OfflineAudioContext(
       2,
-      lastSource.when + lastSource.duration,
+      Math.ceil(totalLen * GENURATE_SAMPLE_RATE),
       GENURATE_SAMPLE_RATE
     );
     const g = offlineCtx.createGain();
     g.gain.value = 1;
     g.connect(offlineCtx.destination);
-    const nodes = [];
-    for (let src of sources) {
-      const { when, offset, duration, buffer, loop } = src;
-      const node = offlineCtx.createBufferSource();
-      node.buffer = buffer;
-      node.loop = !!loop;
-      node.connect(g);
-      nodes.push({
-        when,
-        offset,
-        duration,
-        node,
-      });
-    }
+    const nodes = getPlayNodes(offlineCtx, g, sources);
     for (let { when, offset, duration, node } of nodes) {
       node.start(when, offset, duration);
     }

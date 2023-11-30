@@ -125,8 +125,18 @@ async function doPlay() {
 </script>
 <template>
     <div v-if="project">
+        <div class="p-5 bg-gray-300 mt-[50px] border-b border-white">
+            <SliderRoot v-model="playProgress" @update:modelValue="setProgress"
+                class="relative flex items-center select-none touch-none  h-5" :min="0" :max="100" :step="1">
+                <SliderTrack class="bg-gray-100 relative grow rounded-full h-[3px]">
+                    <SliderRange class="absolute bg-white rounded-full h-full" />
+                </SliderTrack>
+                <SliderThumb class="block w-5 h-5 bg-white rounded-[10px] hover:bg-violet3 focus:outline-none"
+                    aria-label="Volume" />
+            </SliderRoot>
+        </div>
         <div class="overflow-x-auto">
-            <div class="flex relative  mt-[50px] bg-green-100 h-[50px]">
+            <div class="flex relative   bg-green-100 h-[50px]">
                 <span class="absolute text-sm top-[15px] left-[5px] text-black/30">人声轨道</span>
                 <div v-for="piece in playSources.filter(p => p.type == 'content' || p.type == 'hot')"
                     :style="{ left: `${piece.when * 100 / totalLen}%`, width: `${piece.duration * 100 / totalLen}%` }"
@@ -174,16 +184,7 @@ async function doPlay() {
             </div>
 
         </div>
-        <div class="p-5 bg-gray-300 mt-[50px]">
-            <SliderRoot v-model="playProgress" @update:modelValue="setProgress"
-                class="relative flex items-center select-none touch-none  h-5" :min="0" :max="100" :step="1">
-                <SliderTrack class="bg-gray-100 relative grow rounded-full h-[3px]">
-                    <SliderRange class="absolute bg-white rounded-full h-full" />
-                </SliderTrack>
-                <SliderThumb class="block w-5 h-5 bg-white rounded-[10px] hover:bg-violet3 focus:outline-none"
-                    aria-label="Volume" />
-            </SliderRoot>
-        </div>
+
         <div class="mt-[50px] bg-gray-300 p-5">
             <fieldset class="mb-[15px] flex items-center">
                 <label class="w-[90px] text-right text-[15px] mr-3" for="name"> 段落间隔 </label>
@@ -345,7 +346,7 @@ async function doPlay() {
                 class="text-green-800 mr-5 font-semibold shadow-gray-700 hover:bg-green-300 inline-flex h-[35px] items-center justify-center rounded-[4px] bg-white px-[15px] leading-none shadow-[0_2px_10px] focus:outline-none">停止</button>
             <button v-else @click="doPlay"
                 class="text-green-800 mr-5 font-semibold shadow-gray-700 hover:bg-green-300 inline-flex h-[35px] items-center justify-center rounded-[4px] bg-white px-[15px] leading-none shadow-[0_2px_10px] focus:outline-none">播放</button>
-            <button v-if="!store.stop"
+            <button v-if="!store.stop" @click="store.doExport(project)"
                 class="text-green-800 mr-5 font-semibold shadow-gray-700 hover:bg-green-300 inline-flex h-[35px] items-center justify-center rounded-[4px] bg-white px-[15px] leading-none shadow-[0_2px_10px] focus:outline-none">导出</button>
         </div>
     </div>
