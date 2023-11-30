@@ -212,6 +212,27 @@ async function doPlay() {
                     <input id="music-piantou" class="hidden" @change="onSelectPianTou" accept=".wav, .mp3, .m4a"
                         type="file" />
                 </label>
+                <span v-if="project.cfg.piantou" class="select-none mr-2">低音音量：</span>
+                <SliderRoot v-if="project.cfg.piantou" v-model="project.cfg.piantou.lowVol" @update:modelValue="setProgress"
+                    class="relative flex items-center select-none touch-none w-[100px] mr-2 h-5" :min="0.1" :max="0.5"
+                    :step="0.1">
+                    <SliderTrack class="bg-gray-100 relative grow rounded-full h-[3px]">
+                        <SliderRange class="absolute bg-white rounded-full h-full" />
+                    </SliderTrack>
+                    <SliderThumb class="block w-5 h-5 bg-white rounded-[10px] hover:bg-violet3 focus:outline-none"
+                        aria-label="Volume" />
+                </SliderRoot>
+                <span v-if="project.cfg.piantou" class="select-none mr-2">高音音量：</span>
+                <SliderRoot v-if="project.cfg.piantou" v-model="project.cfg.piantou.highVol"
+                    @update:modelValue="setProgress"
+                    class="relative flex items-center select-none touch-none w-[100px] mr-2 h-5" :min="0.5" :max="0.9"
+                    :step="0.1">
+                    <SliderTrack class="bg-gray-100 relative grow rounded-full h-[3px]">
+                        <SliderRange class="absolute bg-white rounded-full h-full" />
+                    </SliderTrack>
+                    <SliderThumb class="block w-5 h-5 bg-white rounded-[10px] hover:bg-violet3 focus:outline-none"
+                        aria-label="Volume" />
+                </SliderRoot>
             </fieldset>
             <fieldset class="mb-[15px] flex items-center">
                 <label class=" w-[90px] text-right text-[15px] mr-3" for="name"> 背景音乐 </label>
@@ -241,7 +262,27 @@ async function doPlay() {
                         <Icon icon="radix-icons:check" class="h-3.5 w-3.5 text-grass11" />
                     </CheckboxIndicator>
                 </CheckboxRoot>
-                <span class="select-none">左右边界</span>
+                <span class="select-none mr-2">左右边界</span>
+                <span v-if="project.cfg.bgm" class="select-none mr-2">低音音量：</span>
+                <SliderRoot v-if="project.cfg.bgm" v-model="project.cfg.bgm.lowVol" @update:modelValue="setProgress"
+                    class="relative flex items-center select-none touch-none w-[100px] mr-2 h-5" :min="0.1" :max="0.5"
+                    :step="0.1">
+                    <SliderTrack class="bg-gray-100 relative grow rounded-full h-[3px]">
+                        <SliderRange class="absolute bg-white rounded-full h-full" />
+                    </SliderTrack>
+                    <SliderThumb class="block w-5 h-5 bg-white rounded-[10px] hover:bg-violet3 focus:outline-none"
+                        aria-label="Volume" />
+                </SliderRoot>
+                <span v-if="project.cfg.bgm" class="select-none mr-2">高音音量：</span>
+                <SliderRoot v-if="project.cfg.bgm" v-model="project.cfg.bgm.highVol" @update:modelValue="setProgress"
+                    class="relative flex items-center select-none touch-none w-[100px] mr-2 h-5" :min="0.5" :max="0.9"
+                    :step="0.1">
+                    <SliderTrack class="bg-gray-100 relative grow rounded-full h-[3px]">
+                        <SliderRange class="absolute bg-white rounded-full h-full" />
+                    </SliderTrack>
+                    <SliderThumb class="block w-5 h-5 bg-white rounded-[10px] hover:bg-violet3 focus:outline-none"
+                        aria-label="Volume" />
+                </SliderRoot>
             </fieldset>
             <fieldset class="mb-[15px] flex items-center">
                 <label class=" w-[90px] text-right text-[15px] mr-3" for="name"> 片尾曲 </label>
@@ -266,7 +307,28 @@ async function doPlay() {
                         <Icon icon="radix-icons:check" class="h-3.5 w-3.5 text-grass11" />
                     </CheckboxIndicator>
                 </CheckboxRoot>
-                <span class="select-none">淡入</span>
+                <span class="select-none mr-2">淡入</span>
+                <span v-if="project.cfg.pianwei" class="select-none mr-2">低音音量：</span>
+                <SliderRoot v-if="project.cfg.pianwei" v-model="project.cfg.pianwei.lowVol" @update:modelValue="setProgress"
+                    class="relative flex items-center select-none touch-none w-[100px] mr-2 h-5" :min="0.1" :max="0.5"
+                    :step="0.1">
+                    <SliderTrack class="bg-gray-100 relative grow rounded-full h-[3px]">
+                        <SliderRange class="absolute bg-white rounded-full h-full" />
+                    </SliderTrack>
+                    <SliderThumb class="block w-5 h-5 bg-white rounded-[10px] hover:bg-violet3 focus:outline-none"
+                        aria-label="Volume" />
+                </SliderRoot>
+                <span v-if="project.cfg.pianwei" class="select-none mr-2">高音音量：</span>
+                <SliderRoot v-if="project.cfg.pianwei" v-model="project.cfg.pianwei.highVol"
+                    @update:modelValue="setProgress"
+                    class="relative flex items-center select-none touch-none w-[100px] mr-2 h-5" :min="0.5" :max="0.9"
+                    :step="0.1">
+                    <SliderTrack class="bg-gray-100 relative grow rounded-full h-[3px]">
+                        <SliderRange class="absolute bg-white rounded-full h-full" />
+                    </SliderTrack>
+                    <SliderThumb class="block w-5 h-5 bg-white rounded-[10px] hover:bg-violet3 focus:outline-none"
+                        aria-label="Volume" />
+                </SliderRoot>
             </fieldset>
             <label v-if="project" class="flex flex-row gap-4 items-center [&>.checkbox]:hover:bg-red-100">
                 <CheckboxRoot v-model:checked="project.cfg.showHots" @update:checked="dosave"

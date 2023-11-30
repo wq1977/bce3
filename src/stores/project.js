@@ -366,13 +366,15 @@ export const useProjectStore = defineStore("project", () => {
       paragraphDelay = project.cfg.paragraphDelta || PARAGRAPH_DEFAULT_DELAY;
       if (project.cfg.usePianTou) {
         if (!buffers[project.cfg.piantou.name]) return [];
+        const highVol = project.cfg.piantou.highVol || 0.9;
+        const lowVol = project.cfg.piantou.lowVol || 0.1;
         const piantouSource = {
           when,
           type: "piantou",
           offset: 0,
           duration: buffers[project.cfg.piantou.name].duration,
           buffer: buffers[project.cfg.piantou.name],
-          volumns: [{ at: when, volumn: 0.9 }],
+          volumns: [{ at: when, volumn: highVol }],
         };
         allsource.push(piantouSource);
         const HOTLINE_PADDING_LEFT = paragraphDelay;
@@ -395,21 +397,21 @@ export const useProjectStore = defineStore("project", () => {
               if (currentHotEndAt != 0) {
                 piantouSource.volumns.push({
                   at: when + CHANGE_VOLUMN_DURATION,
-                  volumn: 0.1,
+                  volumn: lowVol,
                 });
                 piantouSource.volumns.push({
                   at: when + CHANGE_VOLUMN_DURATION * 2,
-                  volumn: 0.9,
+                  volumn: highVol,
                 });
                 when += HOTLINE_PADDING_LEFT;
               }
               piantouSource.volumns.push({
                 at: when - CHANGE_VOLUMN_DURATION * 2,
-                volumn: 0.9,
+                volumn: highVol,
               });
               piantouSource.volumns.push({
                 at: when - CHANGE_VOLUMN_DURATION,
-                volumn: 0.1,
+                volumn: lowVol,
               });
               currentHotEndAt = pieceEndAt;
             }
@@ -424,11 +426,11 @@ export const useProjectStore = defineStore("project", () => {
           }
           piantouSource.volumns.push({
             at: when + CHANGE_VOLUMN_DURATION,
-            volumn: 0.1,
+            volumn: lowVol,
           });
           piantouSource.volumns.push({
             at: when + CHANGE_VOLUMN_DURATION * 2,
-            volumn: 0.9,
+            volumn: highVol,
           });
           if (when < piantouSource.when + piantouSource.duration) {
             when = piantouSource.when + piantouSource.duration;
@@ -444,6 +446,8 @@ export const useProjectStore = defineStore("project", () => {
     // 然后会按顺序播放段落，每个段落之前有默认的间隔，可以给每个段落单独指定段前间隔
     // 背景音乐的时长会跟各个段落的时长一致，可以指定当段落间隔大于3秒时，是否自动增大bgm的音量
     let bgmSource;
+    const bgmHighVol = project.cfg.bgm ? project.cfg.bgm.highVol || 0.9 : 0.9;
+    const bgmLowVol = project.cfg.bgm ? project.cfg.bgm.lowVol || 0.1 : 0.1;
     if (project.cfg.useBGM) {
       if (!buffers[project.cfg.bgm.name]) return [];
       bgmSource = {
@@ -455,26 +459,27 @@ export const useProjectStore = defineStore("project", () => {
         volumns: [
           {
             at: project.cfg.bgm.margin ? when + 1 : when,
-            volumn: project.cfg.bgm.snake ? 0.9 : 0.1,
+            volumn: project.cfg.bgm.snake ? bgmHighVol : bgmLowVol,
           },
         ],
       };
       allsource.push(bgmSource);
     }
 
+    let lastParagraphDuration = 0;
     //播放主要内容
     for (let idx = 0; idx < validParagraphs.length; idx++) {
       const paragraph = validParagraphs[idx];
-      const pDuration = getParagraphDuration(paragraph);
+      lastParagraphDuration = getParagraphDuration(paragraph);
       when += paragraphDelay;
       if (project.cfg.bgm.snake) {
         bgmSource.volumns.push({
           at: when - 2 * CHANGE_VOLUMN_DURATION,
-          volumn: 0.9,
+          volumn: bgmHighVol,
         });
         bgmSource.volumns.push({
           at: when - CHANGE_VOLUMN_DURATION,
-          volumn: 0.1,
+          volumn: bgmLowVol,
         });
       }
       for (let piece of paragraph.pieces) {
@@ -483,22 +488,25 @@ export const useProjectStore = defineStore("project", () => {
           ...(piece.sources || []).map((s) => ({ ...s, when: s.when + when })),
         ];
       }
-      when += pDuration;
+      when += lastParagraphDuration;
       if (project.cfg.bgm.snake && idx !== validParagraphs.length - 1) {
         bgmSource.volumns.push({
           at: when + CHANGE_VOLUMN_DURATION,
-          volumn: 0.1,
+          volumn: bgmLowVol,
         });
         bgmSource.volumns.push({
           at: when + 2 * CHANGE_VOLUMN_DURATION,
-          volumn: 0.9,
+          volumn: bgmHighVol,
         });
       }
     }
 
     if (bgmSource) {
       if (project.cfg.pianwei && project.cfg.pianwei.fadein) {
-        bgmSource.duration = when - bgmSource.when - paragraphDelay;
+        bgmSource.duration =
+          when -
+          bgmSource.when -
+          Math.min(lastParagraphDuration, paragraphDelay);
       } else {
         bgmSource.duration = when - bgmSource.when;
       }
@@ -508,19 +516,26 @@ export const useProjectStore = defineStore("project", () => {
     // 片尾曲（如果有）将完整播放，可以指定一个提前播放量，如果有提前播放，音乐将自动控制
     if (project.cfg.usePianWei) {
       if (!buffers[project.cfg.pianwei.name]) return [];
+      const highVol = project.cfg.pianwei.highVol || 0.9;
+      const lowVol = project.cfg.pianwei.lowVol || 0.1;
       const pianwei = {
         type: "pianwei",
-        when: project.cfg.pianwei.fadein ? when - paragraphDelay : when,
+        when: project.cfg.pianwei.fadein
+          ? when - Math.min(lastParagraphDuration, paragraphDelay)
+          : when,
         offset: 0,
         buffer: buffers[project.cfg.pianwei.name],
         duration: buffers[project.cfg.pianwei.name].duration,
         volumns: project.cfg.pianwei.fadein
           ? [
-              { at: when - paragraphDelay, volumn: 0.1 },
-              { at: when, volumn: 0.1 },
-              { at: when + 1, volumn: 0.9 },
+              {
+                at: when - Math.min(lastParagraphDuration, paragraphDelay),
+                volumn: lowVol,
+              },
+              { at: when, volumn: lowVol },
+              { at: when + 1, volumn: highVol },
             ]
-          : [{ at: when, volumn: 0.9 }],
+          : [{ at: when, volumn: highVol }],
       };
       allsource.push(pianwei);
     }
