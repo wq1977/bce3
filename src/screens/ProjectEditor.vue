@@ -196,9 +196,9 @@ async function doPlay() {
                         <Icon icon="radix-icons:check" class="h-3.5 w-3.5 text-grass11" />
                     </CheckboxIndicator>
                 </CheckboxRoot>
-                <label for="music-piantou" class="">
+                <label for="music-piantou" class="mr-2">
                     <span
-                        class="data-[disabled=true]:text-gray-300 data-[disabled=true]:hover:bg-gray-200 mr-2 h-[35px] bg-gray-200 text-blue-500 font-semibold hover:bg-gray-300 shadow-sm inline-flex  items-center justify-center rounded-[4px] px-[15px] leading-none outline-none transition-all">
+                        class="w-[150px] data-[disabled=true]:text-gray-300 data-[disabled=true]:hover:bg-gray-200 mr-2 h-[35px] bg-gray-200 text-blue-500 font-semibold hover:bg-gray-300 shadow-sm inline-flex  items-center justify-center rounded-[4px] px-[15px] leading-none outline-none transition-all">
                         {{ project.cfg.piantou ? project.cfg.piantou.name : '添加片头音乐' }}
                     </span>
                     <input id="music-piantou" class="hidden" @change="onSelectPianTou" accept=".wav, .mp3, .m4a"
@@ -213,13 +213,20 @@ async function doPlay() {
                         <Icon icon="radix-icons:check" class="h-3.5 w-3.5 text-grass11" />
                     </CheckboxIndicator>
                 </CheckboxRoot>
-                <label for="music-bg">
+                <label for="music-bg" class="mr-2">
                     <span
-                        class="data-[disabled=true]:text-gray-300 data-[disabled=true]:hover:bg-gray-200 mr-2  h-[35px] bg-gray-200 text-blue-500 font-semibold hover:bg-gray-300 shadow-sm inline-flex  items-center justify-center rounded-[4px] px-[15px] leading-none outline-none transition-all">
+                        class="w-[150px] data-[disabled=true]:text-gray-300 data-[disabled=true]:hover:bg-gray-200 mr-2  h-[35px] bg-gray-200 text-blue-500 font-semibold hover:bg-gray-300 shadow-sm inline-flex  items-center justify-center rounded-[4px] px-[15px] leading-none outline-none transition-all">
                         {{ project.cfg.bgm ? project.cfg.bgm.name : '添加背景音乐' }}
                     </span>
                     <input id="music-bg" class="hidden" @change="onSelectBGM" accept=".wav, .mp3, .m4a" type="file" />
                 </label>
+                <CheckboxRoot v-if="project.cfg.bgm" v-model:checked="project.cfg.bgm.snake" @update:checked="dosave"
+                    class="mr-2 shadow-gray-700 hover:bg-green-300 flex h-[25px] w-[25px] appearance-none items-center justify-center rounded-[4px] bg-white shadow-[0_2px_10px] outline-none">
+                    <CheckboxIndicator class="bg-white h-full w-full rounded flex items-center justify-center">
+                        <Icon icon="radix-icons:check" class="h-3.5 w-3.5 text-grass11" />
+                    </CheckboxIndicator>
+                </CheckboxRoot>
+                <span class="select-none">调整音量</span>
             </fieldset>
             <fieldset class="mb-[15px] flex items-center">
                 <label class=" w-[90px] text-right text-[15px] mr-3" for="name"> 片尾曲 </label>
@@ -229,9 +236,9 @@ async function doPlay() {
                         <Icon icon="radix-icons:check" class="h-3.5 w-3.5 text-grass11" />
                     </CheckboxIndicator>
                 </CheckboxRoot>
-                <label for="music-pianwei">
+                <label for="music-pianwei" class="mr-2">
                     <span
-                        class="data-[disabled=true]:text-gray-300 data-[disabled=true]:hover:bg-gray-200 mr-2 h-[35px] bg-gray-200 text-blue-500 font-semibold hover:bg-gray-300 shadow-sm inline-flex  items-center justify-center rounded-[4px] px-[15px] leading-none outline-none transition-all">
+                        class="w-[150px] data-[disabled=true]:text-gray-300 data-[disabled=true]:hover:bg-gray-200 mr-2 h-[35px] bg-gray-200 text-blue-500 font-semibold hover:bg-gray-300 shadow-sm inline-flex  items-center justify-center rounded-[4px] px-[15px] leading-none outline-none transition-all">
                         {{ project.cfg.pianwei ? project.cfg.pianwei.name : '添加片尾音乐' }}
                     </span>
                     <input id="music-pianwei" class="hidden" @change="onSelectPianWei" accept=".wav, .mp3, .m4a"

@@ -451,15 +451,26 @@ export const useProjectStore = defineStore("project", () => {
         offset: 0,
         buffer: buffers[project.cfg.bgm.name],
         loop: true,
-        volumns: [{ at: when, volumn: 0.1 }],
+        volumns: [{ at: when, volumn: project.cfg.bgm.snake ? 0.9 : 0.1 }],
       };
       allsource.push(bgmSource);
     }
 
     //播放主要内容
-    for (let paragraph of validParagraphs) {
+    for (let idx = 0; idx < validParagraphs.length; idx++) {
+      const paragraph = validParagraphs[idx];
       const pDuration = getParagraphDuration(paragraph);
       when += paragraphDelay;
+      if (project.cfg.bgm.snake) {
+        bgmSource.volumns.push({
+          at: when - 2 * CHANGE_VOLUMN_DURATION,
+          volumn: 0.9,
+        });
+        bgmSource.volumns.push({
+          at: when - CHANGE_VOLUMN_DURATION,
+          volumn: 0.1,
+        });
+      }
       for (let piece of paragraph.pieces) {
         allsource = [
           ...allsource,
@@ -467,6 +478,16 @@ export const useProjectStore = defineStore("project", () => {
         ];
       }
       when += pDuration;
+      if (project.cfg.bgm.snake && idx !== validParagraphs.length - 1) {
+        bgmSource.volumns.push({
+          at: when + CHANGE_VOLUMN_DURATION,
+          volumn: 0.1,
+        });
+        bgmSource.volumns.push({
+          at: when + 2 * CHANGE_VOLUMN_DURATION,
+          volumn: 0.9,
+        });
+      }
     }
 
     if (bgmSource) {
