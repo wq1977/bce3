@@ -126,7 +126,8 @@ async function doPlay() {
 <template>
     <div v-if="project">
         <div class="overflow-x-auto">
-            <div class="flex relative  mt-[50px] bg-green-100 h-[100px]">
+            <div class="flex relative  mt-[50px] bg-green-100 h-[50px]">
+                <span class="absolute text-sm top-[15px] left-[5px] text-black/30">人声轨道</span>
                 <div v-for="piece in playSources.filter(p => p.type == 'content' || p.type == 'hot')"
                     :style="{ left: `${piece.when * 100 / totalLen}%`, width: `${piece.duration * 100 / totalLen}%` }"
                     :data-type="piece.type" class="absolute h-[100px] bg-gray-200 data-[type='hot']:bg-orange-200">
@@ -143,6 +144,7 @@ async function doPlay() {
                     <line v-for="line in vols2line(piece)" :x1="`${line.x1}%`" :y1="`${line.y1}%`" :x2="`${line.x2}%`"
                         :y2="`${line.y2}%`" style="stroke: red;stroke-width: 2;"></line>
                 </svg>
+                <span class="absolute text-sm top-[15px] left-[5px] text-black/30">片头音乐轨道</span>
             </div>
             <div v-if="project.cfg.bgm && project.cfg.useBGM"
                 class="flex relative overflow-x-auto bg-green-100 h-[50px] border-t border-white">
@@ -155,6 +157,7 @@ async function doPlay() {
                     <line v-for="line in vols2line(piece)" :x1="`${line.x1}%`" :y1="`${line.y1}%`" :x2="`${line.x2}%`"
                         :y2="`${line.y2}%`" style="stroke: red;stroke-width: 2;"></line>
                 </svg>
+                <span class="absolute text-sm top-[15px] left-[5px] text-black/30">背景音乐轨道</span>
             </div>
             <div v-if="project.cfg.pianwei && project.cfg.usePianWei"
                 class="flex relative  bg-green-100 h-[50px] border-t border-white">
@@ -167,6 +170,7 @@ async function doPlay() {
                     <line v-for="line in vols2line(piece)" :x1="`${line.x1}%`" :y1="`${line.y1}%`" :x2="`${line.x2}%`"
                         :y2="`${line.y2}%`" style="stroke: red;stroke-width: 2;"></line>
                 </svg>
+                <span class="absolute text-sm top-[15px] left-[5px] text-black/30">片尾音乐轨道</span>
             </div>
 
         </div>

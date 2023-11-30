@@ -434,11 +434,12 @@ export const useProjectStore = defineStore("project", () => {
             when = piantouSource.when + piantouSource.duration;
           }
         }
-        if (when < piantouSource.when + piantouSource.duration)
+        if (when < piantouSource.when + piantouSource.duration) {
           when = piantouSource.when + piantouSource.duration;
+        }
+        if (when < paragraphDelay) when = paragraphDelay;
       }
     }
-    if (when < paragraphDelay) when = paragraphDelay;
 
     // 然后会按顺序播放段落，每个段落之前有默认的间隔，可以给每个段落单独指定段前间隔
     // 背景音乐的时长会跟各个段落的时长一致，可以指定当段落间隔大于3秒时，是否自动增大bgm的音量
