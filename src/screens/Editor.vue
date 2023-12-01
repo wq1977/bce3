@@ -13,7 +13,7 @@ const route = useRoute()
                     <RouterLink :to="`/editor/track?id=${route.query.id}`">
                         <span class="border-2 mr-1 w-[1em] h-[1em] flex items-center justify-center rounded-full "><span
                                 class="text-xs">1</span></span>
-                        素材编辑
+                        素材
                     </RouterLink>
                 </NavigationMenuLink>
             </NavigationMenuItem>
@@ -23,7 +23,7 @@ const route = useRoute()
                     <RouterLink :to="`/editor/paragraph?id=${route.query.id}`">
                         <span class="border-2  mr-1 w-[1em] h-[1em] flex items-center justify-center rounded-full "><span
                                 class="text-xs">2</span></span>
-                        段落编辑
+                        段落
                     </RouterLink>
                 </NavigationMenuLink>
             </NavigationMenuItem>
@@ -33,13 +33,24 @@ const route = useRoute()
                     <RouterLink :to="`/editor/project?id=${route.query.id}`">
                         <span class="border-2  mr-1 w-[1em] h-[1em] flex items-center justify-center rounded-full "><span
                                 class="text-xs">3</span></span>
-                        音轨编辑
+                        音乐
                     </RouterLink>
                 </NavigationMenuLink>
             </NavigationMenuItem>
 
             <NavigationMenuItem>
-                <NavigationMenuLink :data-active="route.path == '/editor/project'" as-child
+                <NavigationMenuLink :data-active="route.path == '/editor/publish'" as-child
+                    class="data-[active=true]:text-sky-600 text-gray-500 hover:bg-gray-100 focus:shadow-green-700 group flex select-none items-center justify-between gap-[2px] rounded-[4px] px-3 py-2 text-[15px] font-medium leading-none outline-none ">
+                    <RouterLink :to="`/editor/publish?id=${route.query.id}`">
+                        <span class="border-2  mr-1 w-[1em] h-[1em] flex items-center justify-center rounded-full "><span
+                                class="text-xs">4</span></span>
+                        发布
+                    </RouterLink>
+                </NavigationMenuLink>
+            </NavigationMenuItem>
+
+            <NavigationMenuItem>
+                <NavigationMenuLink as-child
                     class="data-[active=true]:text-sky-600 text-gray-500 hover:bg-gray-100 focus:shadow-green-700 group flex select-none items-center justify-between gap-[2px] rounded-[4px] px-3 py-2 text-[15px] font-medium leading-none outline-none ">
                     <RouterLink :to="`/`">
                         <Icon icon="tabler:arrow-back" class="text-green-600" />

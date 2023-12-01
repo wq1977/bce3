@@ -4,6 +4,7 @@ import Editor from "./screens/Editor.vue";
 import ParagraphEditor from "./screens/ParagraphEditor.vue";
 import TrackEditor from "./screens/TrackEditor.vue";
 import ProjectEditor from "./screens/ProjectEditor.vue";
+import Publisher from "./screens/Publish.vue";
 
 const routes = [
   { path: "/", component: Home },
@@ -22,6 +23,10 @@ const routes = [
       {
         path: "project",
         component: ProjectEditor,
+      },
+      {
+        path: "publish",
+        component: Publisher,
       },
     ],
   },
