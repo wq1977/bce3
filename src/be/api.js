@@ -1,4 +1,4 @@
-const { shell } = require("electron");
+const { shell, dialog, BrowserWindow } = require("electron");
 const level = require("classic-level");
 const { createHash } = require("crypto");
 import createLogger from "./log";
@@ -121,6 +121,12 @@ const api = {
       path: require("path").join("tracks", hash),
       buffer: require("fs").readFileSync(trackPath),
     };
+  },
+  async saveDialog(event, options) {
+    return dialog.showSaveDialogSync(
+      BrowserWindow.fromWebContents(event.sender),
+      options
+    );
   },
   recognition(event, proj, buffer) {
     const tmppath = require("path").join(

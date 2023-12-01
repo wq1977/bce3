@@ -282,14 +282,22 @@ export const useProjectStore = defineStore("project", () => {
   }
 
   async function doExport(project) {
-    await loadTracks(project);
-    const allsource = getProjectSources(project);
-    const buffer = await getSourcesBuffer(allsource);
-    await api.call(
-      "save2file",
-      `/Users/wwq/Desktop/${project.id}.wav`,
-      toWav(buffer)
-    );
+    const path = await api.call("saveDialog", {
+      title: "保存文件",
+      defaultPath: `${project.id}.wav`,
+      filters: [
+        {
+          name: "wav",
+          extensions: [".wav"],
+        },
+      ],
+    });
+    if (path) {
+      await loadTracks(project);
+      const allsource = getProjectSources(project);
+      const buffer = await getSourcesBuffer(allsource);
+      await api.call("save2file", path, toWav(buffer));
+    }
   }
 
   function prepareParagraphPieceForPlay(project, paragraph) {
