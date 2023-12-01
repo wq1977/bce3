@@ -2,6 +2,7 @@ const { shell, dialog, BrowserWindow } = require("electron");
 const level = require("classic-level");
 const { createHash } = require("crypto");
 import createLogger from "./log";
+import { shares } from "./shares";
 
 let db;
 let PROJ_BASE;
@@ -17,6 +18,14 @@ const api = {
     } catch (err) {
       return def;
     }
+  },
+  async listShare() {
+    return await Promise.all(
+      shares.map((s) => ({
+        id: s.id,
+        name: s.name,
+      }))
+    );
   },
   async cfgSet(path, value) {
     await db.set(`config-${path}`, value);

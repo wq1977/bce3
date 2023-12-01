@@ -87,6 +87,7 @@ function words2pieces(project, start, end) {
 
 export const useProjectStore = defineStore("project", () => {
   const list = ref([]);
+  const shareList = ref([]);
   const stop = ref(null);
   watch(stop, (_, old) => {
     if (old) {
@@ -99,7 +100,9 @@ export const useProjectStore = defineStore("project", () => {
       prepare(proj);
     }
   }
-  async function create() {}
+  async function refreshShareList() {
+    shareList.value = (await api.call("listShare")) || [];
+  }
   async function saveWords(project) {
     await api.call(
       "save2file",
@@ -976,13 +979,13 @@ export const useProjectStore = defineStore("project", () => {
   });
   return {
     list,
-    load,
+    shareList,
     stop,
     loading,
     playProgress,
     recognitionProgress,
+    load,
     play,
-    create,
     prepare,
     words2pieces,
     splitParagraph,
@@ -1011,6 +1014,7 @@ export const useProjectStore = defineStore("project", () => {
     getContentBlocks,
     getProjectSources,
     resetMusicBuffer,
+    refreshShareList,
   };
 });
 
