@@ -125,7 +125,7 @@ async function doPlay() {
 </script>
 <template>
     <div v-if="project">
-        <div class="p-5 bg-gray-300 mt-[50px] border-b border-white">
+        <div class="p-5 mt-[50px] bg-gray-300 border-b border-white">
             <SliderRoot v-model="playProgress" @update:modelValue="setProgress"
                 class="relative flex items-center select-none touch-none  h-5" :min="0" :max="100" :step="1">
                 <SliderTrack class="bg-gray-100 relative grow rounded-full h-[3px]">
@@ -147,7 +147,7 @@ async function doPlay() {
                 class="flex relative  bg-green-100 h-[50px] border-t border-white">
                 <div v-for="piece in playSources.filter(p => p.type == 'piantou')"
                     :style="{ left: `${piece.when * 100 / totalLen}%`, width: `${piece.duration * 100 / totalLen}%` }"
-                    class="absolute h-[100px] bg-red-200">
+                    class="absolute h-[50px] bg-red-200">
                 </div>
                 <svg v-for="piece in playSources.filter(p => p.type == 'piantou')" style="width:100%;height:100%;"
                     class="absolute left-0 top-0">
@@ -160,7 +160,7 @@ async function doPlay() {
                 class="flex relative overflow-x-auto bg-green-100 h-[50px] border-t border-white">
                 <div v-for="piece in playSources.filter(p => p.type == 'bgm')"
                     :style="{ left: `${piece.when * 100 / totalLen}%`, width: `${piece.duration * 100 / totalLen}%` }"
-                    class="absolute h-[100px] bg-blue-200">
+                    class="absolute h-[50px] bg-blue-200">
                 </div>
                 <svg v-for="piece in playSources.filter(p => p.type == 'bgm')" style="width:100%;height:100%;"
                     class="absolute left-0 top-0">
@@ -173,7 +173,7 @@ async function doPlay() {
                 class="flex relative  bg-green-100 h-[50px] border-t border-white">
                 <div v-for="piece in playSources.filter(p => p.type == 'pianwei')"
                     :style="{ left: `${piece.when * 100 / totalLen}%`, width: `${piece.duration * 100 / totalLen}%` }"
-                    class="absolute h-[100px] bg-yellow-200">
+                    class="absolute h-[50px] bg-yellow-200">
                 </div>
                 <svg v-for="piece in playSources.filter(p => p.type == 'pianwei')" style="width:100%;height:100%;"
                     class="absolute left-0 top-0">
@@ -182,9 +182,13 @@ async function doPlay() {
                 </svg>
                 <span class="absolute text-sm top-[15px] left-[5px] text-black/30">片尾音乐轨道</span>
             </div>
-
         </div>
-
+        <div class="border-t border-white bg-gray-300 p-5 text-right">
+            <button v-if="store.stop" @click="store.stop()"
+                class="text-green-800 mr-5 font-semibold shadow-gray-700 hover:bg-green-300 inline-flex h-[35px] items-center justify-center rounded-[4px] bg-white px-[15px] leading-none shadow-[0_2px_10px] focus:outline-none">停止</button>
+            <button v-else @click="doPlay"
+                class="text-green-800 mr-5 font-semibold shadow-gray-700 hover:bg-green-300 inline-flex h-[35px] items-center justify-center rounded-[4px] bg-white px-[15px] leading-none shadow-[0_2px_10px] focus:outline-none">播放</button>
+        </div>
         <div class="mt-[50px] bg-gray-300 p-5">
             <fieldset class="mb-[15px] flex items-center">
                 <label class="w-[90px] text-right text-[15px] mr-3" for="name"> 段落间隔 </label>
@@ -340,14 +344,6 @@ async function doPlay() {
                 </CheckboxRoot>
                 <span class="select-none">使用金句列表</span>
             </label>
-        </div>
-        <div class="mt-[50px] bg-gray-300 p-5 text-right">
-            <button v-if="store.stop" @click="store.stop()"
-                class="text-green-800 mr-5 font-semibold shadow-gray-700 hover:bg-green-300 inline-flex h-[35px] items-center justify-center rounded-[4px] bg-white px-[15px] leading-none shadow-[0_2px_10px] focus:outline-none">停止</button>
-            <button v-else @click="doPlay"
-                class="text-green-800 mr-5 font-semibold shadow-gray-700 hover:bg-green-300 inline-flex h-[35px] items-center justify-center rounded-[4px] bg-white px-[15px] leading-none shadow-[0_2px_10px] focus:outline-none">播放</button>
-            <button v-if="!store.stop" @click="store.doExport(project)"
-                class="text-green-800 mr-5 font-semibold shadow-gray-700 hover:bg-green-300 inline-flex h-[35px] items-center justify-center rounded-[4px] bg-white px-[15px] leading-none shadow-[0_2px_10px] focus:outline-none">导出</button>
         </div>
     </div>
 </template>
