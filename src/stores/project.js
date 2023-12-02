@@ -14,6 +14,7 @@ const buffers = {};
 
 //某个track的某个buffer如果全局start和end的时候的offset和duration
 function getTrackSource(track, idx, start, end) {
+  console.log("get track source", idx, start, end);
   //start 和 end 是全局的以秒为单位的开始和结束时间，比如 1.01, 2
   let secondSkip = 0,
     duration = end - start,
@@ -100,8 +101,10 @@ export const useProjectStore = defineStore("project", () => {
       prepare(proj);
     }
   }
-  async function refreshShareList() {
-    shareList.value = (await api.call("listShare")) || [];
+  async function refreshShareList(project) {
+    shareList.value =
+      (await api.call("listShare", JSON.parse(JSON.stringify(project.cfg)))) ||
+      [];
   }
   async function saveWords(project) {
     await api.call(
@@ -242,8 +245,19 @@ export const useProjectStore = defineStore("project", () => {
     }
   }
 
+  function bufferReady(project) {
+    for (let i = 0; i < project.tracks.length; i++) {
+      for (let j = 0; j < project.tracks[i].origin.length; j++) {
+        if (!project.tracks[i].origin[j].buffer) return false;
+      }
+    }
+    return true;
+  }
+
   function preparePieceAudioSource(project, piece) {
-    if (!project.tracks[0].origin[0].buffer) return;
+    if (!bufferReady(project)) {
+      return;
+    }
     if (!piece.type || piece.type == "normal") {
       piece.sources = [];
       for (let track of project.tracks) {
@@ -324,13 +338,13 @@ export const useProjectStore = defineStore("project", () => {
   }
 
   //返回最长的那个track的长度，支持不同的sampleRate
-  function projectTotalLen(project) {
+  function projectTrackLen(project) {
     let projectLength = 0;
     if (project) {
       for (let track of project.tracks) {
         let trackLength = 0;
         for (let origin of track.origin) {
-          trackLength += origin.buffer ? origin.buffer.duration : 0;
+          trackLength += origin.buffer ? origin.buffer.length : 0;
         }
         if (trackLength > projectLength) projectLength = trackLength;
       }
@@ -359,6 +373,7 @@ export const useProjectStore = defineStore("project", () => {
   //在when的时间播放buffer的offset位置，播放duration这么长，而且要loop
   function getProjectSources(project) {
     if (!project) return [];
+    if (!bufferReady(project)) return [];
     const validParagraphs = (project.paragraphs || [])
       .filter((p) => p.comment)
       .sort((a, b) => a.sequence - b.sequence);
@@ -375,7 +390,7 @@ export const useProjectStore = defineStore("project", () => {
     // 如果没有指定片头曲，无论是否指定hotline，都不会播放hotline
     if (project.cfg) {
       paragraphDelay = project.cfg.paragraphDelta || PARAGRAPH_DEFAULT_DELAY;
-      if (project.cfg.usePianTou) {
+      if (project.cfg.usePianTou && project.cfg.piantou) {
         if (!buffers[project.cfg.piantou.name]) return [];
         const highVol = project.cfg.piantou.highVol || 0.9;
         const lowVol = project.cfg.piantou.lowVol || 0.1;
@@ -459,7 +474,7 @@ export const useProjectStore = defineStore("project", () => {
     let bgmSource;
     const bgmHighVol = project.cfg.bgm ? project.cfg.bgm.highVol || 0.9 : 0.9;
     const bgmLowVol = project.cfg.bgm ? project.cfg.bgm.lowVol || 0.1 : 0.1;
-    if (project.cfg.useBGM) {
+    if (project.cfg.useBGM && project.cfg.bgm) {
       if (!buffers[project.cfg.bgm.name]) return [];
       bgmSource = {
         type: "bgm",
@@ -529,7 +544,7 @@ export const useProjectStore = defineStore("project", () => {
     }
 
     // 片尾曲（如果有）将完整播放，可以指定一个提前播放量，如果有提前播放，音乐将自动控制
-    if (project.cfg.usePianWei) {
+    if (project.cfg.usePianWei && project.cfg.pianwei) {
       if (!buffers[project.cfg.pianwei.name]) return [];
       const highVol = project.cfg.pianwei.highVol || 0.9;
       const lowVol = project.cfg.pianwei.lowVol || 0.1;
@@ -788,8 +803,8 @@ export const useProjectStore = defineStore("project", () => {
   async function getWordsBuffer(project, from, to) {
     await loadTracks(project);
     const piece = {
-      frameStart: project.words[from].start,
-      frameEnd: project.words[to].end,
+      start: project.words[from].start / S2T_SAMPLE_RATE,
+      end: project.words[to].end / S2T_SAMPLE_RATE,
     };
     preparePieceAudioSource(project, piece);
     if (piece.sources.length) {
@@ -946,7 +961,7 @@ export const useProjectStore = defineStore("project", () => {
   async function recognition(project) {
     recognitionProgress.value = 0;
     let screenLock = await navigator.wakeLock.request("screen");
-    const lenlimit = projectTotalLen(project);
+    const lenlimit = projectTrackLen(project);
     const offlineCtx = new OfflineAudioContext(1, lenlimit, S2T_SAMPLE_RATE);
     playTracks(project, 0, offlineCtx);
     const buffer = await offlineCtx.startRendering();
@@ -1009,7 +1024,7 @@ export const useProjectStore = defineStore("project", () => {
     deleteProject,
     saveProject,
     recognition,
-    projectTotalLen,
+    projectTrackLen,
     getHotLines,
     getContentBlocks,
     getProjectSources,

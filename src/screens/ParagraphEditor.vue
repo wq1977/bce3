@@ -192,6 +192,11 @@ function pieceMouseup(e) {
                         @click="playSelection()">
                         <Icon icon="octicon:play-16" class="mr-2" /> 播放
                     </ContextMenuItem>
+                    <ContextMenuItem
+                        class="group text-[13px] leading-none  rounded-[3px] flex items-center h-[25px] px-[5px] relative pl-[18px] select-none outline-none  data-[disabled]:pointer-events-none data-[highlighted]:bg-green-600 data-[highlighted]:text-green-400"
+                        @click="adjustWords()">
+                        <Icon icon="carbon:settings-adjust" class="mr-2" /> 调整
+                    </ContextMenuItem>
                     <ContextMenuSeparator class="h-[1px] bg-green-300 m-[5px]" />
                     <ContextMenuItem
                         class="group text-[13px] leading-none  rounded-[3px] flex items-center h-[25px] px-[5px] relative pl-[18px] select-none outline-none  data-[disabled]:pointer-events-none data-[highlighted]:bg-green-600 data-[highlighted]:text-green-400"
@@ -218,12 +223,6 @@ function pieceMouseup(e) {
                         class="group text-[13px] leading-none  rounded-[3px] flex items-center h-[25px] px-[5px] relative pl-[18px] select-none outline-none  data-[disabled]:pointer-events-none data-[highlighted]:bg-green-600 data-[highlighted]:text-green-400"
                         @click="setSelectionHot(false)">
                         <Icon icon="jam:mask-f" class="mr-2" /> 取消金句
-                    </ContextMenuItem>
-                    <ContextMenuSeparator class="h-[1px] bg-green-300 m-[5px]" />
-                    <ContextMenuItem
-                        class="group text-[13px] leading-none  rounded-[3px] flex items-center h-[25px] px-[5px] relative pl-[18px] select-none outline-none  data-[disabled]:pointer-events-none data-[highlighted]:bg-green-600 data-[highlighted]:text-green-400"
-                        @click="adjustWords()">
-                        <Icon icon="carbon:settings-adjust" class="mr-2" /> 调整
                     </ContextMenuItem>
                 </ContextMenuContent>
             </ContextMenuPortal>

@@ -105,9 +105,9 @@ async function doRecognition() {
             <input id="track-selector" :disabled="store.recognitionProgress >= 0" class="hidden" @change="onSelectFiles"
                 accept=".wav, .mp3, .m4a" multiple type="file" />
         </label>
-        <button @click="doRecognition" :disabled="store.recognitionProgress >= 0 || store.projectTotalLen(project) <= 0"
+        <button @click="doRecognition" :disabled="store.recognitionProgress >= 0 || store.projectTrackLen(project) <= 0"
             class="disabled:text-gray-300 disabled:hover:bg-gray-200 mr-2 w-[100px] h-[35px] bg-gray-200 text-blue-500 font-semibold hover:bg-gray-300 shadow-sm inline-flex  items-center justify-center rounded-[4px] px-[15px] leading-none outline-none transition-all">开始识别</button>
-        <button :disabled="store.recognitionProgress >= 0 || store.projectTotalLen(project) <= 0" v-if="!store.stop"
+        <button :disabled="store.recognitionProgress >= 0 || store.projectTrackLen(project) <= 0" v-if="!store.stop"
             @click="playTrack"
             class="disabled:text-gray-300 disabled:hover:bg-gray-200 mr-2 w-[100px] h-[35px] bg-gray-200 text-blue-500 font-semibold hover:bg-gray-300 shadow-sm inline-flex  items-center justify-center rounded-[4px] px-[15px] leading-none outline-none transition-all">播放</button>
         <button :disabled="store.recognitionProgress >= 0" v-else @click="() => { store.stop(); store.stop = null; }"

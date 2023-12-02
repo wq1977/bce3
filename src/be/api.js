@@ -19,11 +19,12 @@ const api = {
       return def;
     }
   },
-  async listShare() {
+  async listShare(event, cfg) {
     return await Promise.all(
-      shares.map((s) => ({
+      shares.map(async (s) => ({
         id: s.id,
         name: s.name,
+        status: await s.publishStatus(cfg),
       }))
     );
   },

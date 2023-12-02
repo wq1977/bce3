@@ -54,12 +54,14 @@ function dragStart(e, wordidx) {
         document.onmousemove = null;
         const origin = limitwords.value[wordidx].start
         const newvalue = origin + adjFrame.value
+
+        limitwords.value[wordidx].start = newvalue
+        if (wordidx < limitwords.value.length - 1) {
+            limitwords.value[wordidx].end = limitwords.value[wordidx + 1].start
+        }
+
         adjFrame.value = 0
         dragingIdx.value = -1
-        for (let word of limitwords.value) {
-            if (word.start == origin) word.start = newvalue;
-            if (word.end == origin) word.end = newvalue
-        }
         cursorLeft.value = -1
         store.playWordsRaw(project.value, props.from + wordidx, props.to)
         store.saveWords(project.value)
@@ -79,6 +81,7 @@ function dragStart(e, wordidx) {
 async function drawFrame() {
     if (!limitwords.value || !limitwords.value.length) return;
     const buffer = await store.getWordsBuffer(project.value, props.from, limitTo.value)
+    console.log('get words buffer', buffer)
     if (!buffer) return;
     var leftChannel = buffer.getChannelData(0);
     const context = canvas.value.getContext('2d')
