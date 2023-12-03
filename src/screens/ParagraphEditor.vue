@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import WordAdjust from '../component/WordAdjust.vue'
 import Draggable from 'vuedraggable'
 import { Icon } from '@iconify/vue'
@@ -16,8 +16,7 @@ if (!store.list.length) {
     init()
 }
 
-function fmtFrameDuration(d) {
-    const secs = d / 44100;
+function fmtFrameDuration(secs) {
     const hour = Math.floor(secs / 3600);
     const minute = Math.floor((secs % 3600) / 60);
     const sec = Math.floor(secs % 60);
@@ -82,6 +81,28 @@ const selWordStart = ref(null)
 const selWordEnd = ref(null)
 const selParagraph = ref(null)
 
+watch(() => selWordEnd.value, () => {
+    console.log('selword change to:', selWordEnd.value)
+})
+
+let selectionCheckTimer
+function selectionChange(e) {
+    if (selectionCheckTimer) {
+        clearTimeout(selectionCheckTimer)
+    }
+    selectionCheckTimer = setTimeout(() => {
+        selectionCheckTimer = null
+        pieceMouseup(e)
+    }, 300);
+}
+onMounted(() => {
+    document.addEventListener('selectionchange', selectionChange);
+})
+
+onUnmounted(() => {
+    document.removeEventListener('selectionchange', selectionChange)
+})
+
 function adjustWords() {
     setTimeout(() => {
         doAdjust.value = true
@@ -108,51 +129,49 @@ function setSelectionHot(value) {
     }
 }
 
-function pieceMouseup(e) {
-    if (e.button != 0) return; //左键
-    setTimeout(() => {
-        const selection = getSelection()
-        if (selection.type == 'Range') {
-            let nodeBase = selection.anchorNode
-            if (nodeBase.nodeName !== 'SPAN') {
-                nodeBase = nodeBase.parentNode
-            }
-            if (nodeBase.nodeName !== 'SPAN') {
-                console.log('select test, base is not span', nodeBase)
-                return
-            }
-            let nodeExtent = selection.extentNode
-            if (nodeExtent.nodeName !== 'SPAN') {
-                nodeExtent = nodeExtent.parentNode
-            }
-            if (nodeExtent.nodeName !== 'SPAN') {
-                console.log('select test, extent is not span', nodeExtent)
-                return
+function pieceMouseup() {
+    const selection = getSelection()
+    console.log('selection may change:', selection.type)
+    if (selection.type == 'Range') {
+        let nodeBase = selection.anchorNode
+        if (nodeBase.nodeName !== 'SPAN') {
+            nodeBase = nodeBase.parentNode
+        }
+        if (nodeBase.nodeName !== 'SPAN') {
+            console.log('select test, base is not span', nodeBase)
+            return
+        }
+        let nodeExtent = selection.extentNode
+        if (nodeExtent.nodeName !== 'SPAN') {
+            nodeExtent = nodeExtent.parentNode
+        }
+        if (nodeExtent.nodeName !== 'SPAN') {
+            console.log('select test, extent is not span', nodeExtent)
+            return
 
-            }
-
-            const paragraphIdxBase = parseInt(nodeBase.getAttribute('data-paragraph'))
-            const paragraphIdxExtent = parseInt(nodeExtent.getAttribute('data-paragraph'))
-            if (paragraphIdxBase !== paragraphIdxExtent) {
-                console.log('not same paragraph', paragraphIdxBase, paragraphIdxExtent)
-                return
-            }
-            const pieceIdxBase = parseInt(nodeBase.getAttribute('data-piece'))
-            const pieceIdxExtent = parseInt(nodeExtent.getAttribute('data-piece'))
-            const vbase = selection.anchorOffset
-            const wordBase = store.getWordIndex(project.value, project.value.paragraphs[paragraphIdxBase].pieces[pieceIdxBase], vbase)
-            const vextent = selection.extentOffset
-            const wordExtent = store.getWordIndex(project.value, project.value.paragraphs[paragraphIdxExtent].pieces[pieceIdxExtent], vextent)
-            selWordStart.value = Math.max(0, Math.min(wordBase, wordExtent) - 1)
-            selWordEnd.value = Math.max(wordBase, wordExtent)
-            selParagraph.value = paragraphIdxBase
-        } else {
-            selWordStart.value = null
-            selWordEnd.value = null
-            selParagraph.value = null
         }
 
-    }, 300);
+        const paragraphIdxBase = parseInt(nodeBase.getAttribute('data-paragraph'))
+        const paragraphIdxExtent = parseInt(nodeExtent.getAttribute('data-paragraph'))
+        if (paragraphIdxBase !== paragraphIdxExtent) {
+            console.log('not same paragraph', paragraphIdxBase, paragraphIdxExtent)
+            return
+        }
+        const pieceIdxBase = parseInt(nodeBase.getAttribute('data-piece'))
+        const pieceIdxExtent = parseInt(nodeExtent.getAttribute('data-piece'))
+        const vbase = selection.anchorOffset
+        const wordBase = store.getWordIndex(project.value, project.value.paragraphs[paragraphIdxBase].pieces[pieceIdxBase], vbase)
+        const vextent = selection.extentOffset
+        const wordExtent = store.getWordIndex(project.value, project.value.paragraphs[paragraphIdxExtent].pieces[pieceIdxExtent], vextent)
+        selWordStart.value = Math.max(0, Math.min(wordBase, wordExtent))
+        selWordEnd.value = Math.max(wordBase, wordExtent)
+        selParagraph.value = paragraphIdxBase
+    } else {
+        selWordStart.value = null
+        selWordEnd.value = null
+        selParagraph.value = null
+        console.log('remove selword tag')
+    }
 }
 
 </script>
@@ -175,7 +194,7 @@ function pieceMouseup(e) {
                             <span v-for="(piece, pidx) in paragraph.pieces" :data-paragraph="idx" :data-piece="pidx"
                                 :data-tag="piece.type || 'normal'" @mouseup="pieceMouseup" :data-ishot="piece.ishot"
                                 @keydown="paragraphKeyDown($event, idx, piece)" tabindex="0"
-                                class="leading-loose focus:outline-none decoration-4 decoration-dashed data-[tag=beep]:line-through data-[ishot=true]:bg-orange-200 data-[tag=beep]:decoration-wavy data-[tag=beep]:text-blue-600 data-[tag=delete]:line-through data-[tag=delete]:text-red-600 antialiased">
+                                class="leading-loose focus:outline-none decoration-4 decoration-dashed data-[tag=mute]:underline data-[tag=beep]:line-through data-[ishot=true]:bg-orange-200 data-[tag=beep]:decoration-wavy data-[tag=beep]:text-blue-600 data-[tag=delete]:line-through data-[tag=delete]:text-red-600 antialiased">
                                 {{
                                     piece.text }} </span>
                         </div>
@@ -190,39 +209,44 @@ function pieceMouseup(e) {
                     <ContextMenuItem
                         class="group text-[13px] leading-none  rounded-[3px] flex items-center h-[25px] px-[5px] relative pl-[18px] select-none outline-none  data-[disabled]:pointer-events-none data-[highlighted]:bg-green-600 data-[highlighted]:text-green-400"
                         @click="playSelection()">
-                        <Icon icon="octicon:play-16" class="mr-2" /> 播放
+                        <Icon icon="octicon:play-16" class="mr-2 w-[1em]" /> 播放
                     </ContextMenuItem>
                     <ContextMenuItem
                         class="group text-[13px] leading-none  rounded-[3px] flex items-center h-[25px] px-[5px] relative pl-[18px] select-none outline-none  data-[disabled]:pointer-events-none data-[highlighted]:bg-green-600 data-[highlighted]:text-green-400"
                         @click="adjustWords()">
-                        <Icon icon="carbon:settings-adjust" class="mr-2" /> 调整
+                        <Icon icon="carbon:settings-adjust" class="mr-2 w-[1em]" /> 调整
                     </ContextMenuItem>
                     <ContextMenuSeparator class="h-[1px] bg-green-300 m-[5px]" />
                     <ContextMenuItem
                         class="group text-[13px] leading-none  rounded-[3px] flex items-center h-[25px] px-[5px] relative pl-[18px] select-none outline-none  data-[disabled]:pointer-events-none data-[highlighted]:bg-green-600 data-[highlighted]:text-green-400"
-                        @click="setSelectionTag('delete')">
-                        <Icon icon="fa6-solid:xmarks-lines" class="mr-2" /> 删除
+                        @click="setSelectionTag('normal')">
+                        <Icon icon="fa-solid:grip-lines" class="mr-2 w-[1em]" /> 正常
                     </ContextMenuItem>
                     <ContextMenuItem
                         class="group text-[13px] leading-none  rounded-[3px] flex items-center h-[25px] px-[5px] relative pl-[18px] select-none outline-none  data-[disabled]:pointer-events-none data-[highlighted]:bg-green-600 data-[highlighted]:text-green-400"
-                        @click="setSelectionTag('normal')">
-                        <Icon icon="fa-solid:grip-lines" class="mr-2" /> 正常
+                        @click="setSelectionTag('mute')">
+                        <Icon icon="fa6-solid:xmarks-lines" class="mr-2 w-[1em]" /> 静音
+                    </ContextMenuItem>
+                    <ContextMenuItem
+                        class="group text-[13px] leading-none  rounded-[3px] flex items-center h-[25px] px-[5px] relative pl-[18px] select-none outline-none  data-[disabled]:pointer-events-none data-[highlighted]:bg-green-600 data-[highlighted]:text-green-400"
+                        @click="setSelectionTag('delete')">
+                        <Icon icon="fa6-solid:xmarks-lines" class="mr-2 w-[1em]" /> 删除
                     </ContextMenuItem>
                     <ContextMenuItem
                         class="group text-[13px] leading-none  rounded-[3px] flex items-center h-[25px] px-[5px] relative pl-[18px] select-none outline-none  data-[disabled]:pointer-events-none data-[highlighted]:bg-green-600 data-[highlighted]:text-green-400"
                         @click="setSelectionTag('beep')">
-                        <Icon icon="jam:mask-f" class="mr-2" /> 打码
+                        <Icon icon="jam:mask-f" class="mr-2 w-[1em]" /> 打码
                     </ContextMenuItem>
                     <ContextMenuSeparator class="h-[1px] bg-green-300 m-[5px]" />
                     <ContextMenuItem
                         class="group text-[13px] leading-none  rounded-[3px] flex items-center h-[25px] px-[5px] relative pl-[18px] select-none outline-none  data-[disabled]:pointer-events-none data-[highlighted]:bg-green-600 data-[highlighted]:text-green-400"
                         @click="setSelectionHot(true)">
-                        <Icon icon="jam:mask-f" class="mr-2" /> 金句
+                        <Icon icon="jam:mask-f" class="mr-2 w-[1em]" /> 金句
                     </ContextMenuItem>
                     <ContextMenuItem
                         class="group text-[13px] leading-none  rounded-[3px] flex items-center h-[25px] px-[5px] relative pl-[18px] select-none outline-none  data-[disabled]:pointer-events-none data-[highlighted]:bg-green-600 data-[highlighted]:text-green-400"
                         @click="setSelectionHot(false)">
-                        <Icon icon="jam:mask-f" class="mr-2" /> 取消金句
+                        <Icon icon="jam:mask-f" class="mr-2 w-[1em]" /> 取消金句
                     </ContextMenuItem>
                 </ContextMenuContent>
             </ContextMenuPortal>

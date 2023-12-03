@@ -8,7 +8,7 @@ const cursorLeft = ref(-1)
 const dragingIdx = ref(-1)
 const project = computed(() => store.list.filter(p => p.id == props.projectid)[0])
 const limitTo = computed(() => {
-    const FRAME_LIMIT = 44100 * 10
+    const FRAME_LIMIT = 44100 * 50
     let total = 0
     for (let i = props.from; i <= props.to; i++) {
         if (project.value.words[i].start || project.value.words[i].end) {
@@ -58,6 +58,9 @@ function dragStart(e, wordidx) {
         limitwords.value[wordidx].start = newvalue
         if (wordidx < limitwords.value.length - 1) {
             limitwords.value[wordidx].end = limitwords.value[wordidx + 1].start
+        }
+        if (wordidx > 0) {
+            limitwords.value[wordidx - 1].end = newvalue
         }
 
         adjFrame.value = 0

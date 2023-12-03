@@ -14,7 +14,6 @@ const buffers = {};
 
 //某个track的某个buffer如果全局start和end的时候的offset和duration
 function getTrackSource(track, idx, start, end) {
-  console.log("get track source", idx, start, end);
   //start 和 end 是全局的以秒为单位的开始和结束时间，比如 1.01, 2
   let secondSkip = 0,
     duration = end - start,
@@ -284,6 +283,8 @@ export const useProjectStore = defineStore("project", () => {
     } else if (piece.type == "delete") {
       piece.sources = [];
       piece.duration = 0;
+    } else if (piece.type == "mute") {
+      piece.sources = [];
     } else if (piece.type == "beep") {
       piece.sources = [
         {
@@ -380,7 +381,7 @@ export const useProjectStore = defineStore("project", () => {
     for (let paragraph of validParagraphs) {
       prepareParagraphPieceForPlay(project, paragraph);
     }
-    const CHANGE_VOLUMN_DURATION = 1;
+    let CHANGE_VOLUMN_DURATION = 1;
     let allsource = [];
     let when = 0;
     let paragraphDelay = PARAGRAPH_DEFAULT_DELAY;
@@ -389,6 +390,7 @@ export const useProjectStore = defineStore("project", () => {
     // 片头曲的音量将按照hotline的长度自动变化
     // 如果没有指定片头曲，无论是否指定hotline，都不会播放hotline
     if (project.cfg) {
+      CHANGE_VOLUMN_DURATION = project.cfg.fadeDuration || 1;
       paragraphDelay = project.cfg.paragraphDelta || PARAGRAPH_DEFAULT_DELAY;
       if (project.cfg.usePianTou && project.cfg.piantou) {
         if (!buffers[project.cfg.piantou.name]) return [];
@@ -742,14 +744,14 @@ export const useProjectStore = defineStore("project", () => {
   async function playWordsRaw(project, from, to) {
     const buffer = await getWordsBuffer(project, from, to);
     if (buffer) {
-      const ctx = new AudioContext();
-      let g = ctx.createGain();
-      g.gain.value = 1;
-      g.connect(ctx.destination);
-      const node = ctx.createBufferSource();
-      node.buffer = buffer;
-      node.connect(g);
-      node.start();
+      play([
+        {
+          when: 0,
+          duration: buffer.duration,
+          offset: 0,
+          buffer,
+        },
+      ]);
     }
   }
 
@@ -816,11 +818,11 @@ export const useProjectStore = defineStore("project", () => {
     if (project.paragraphs[paragraphIdx].start > wordstart) return;
     if (project.paragraphs[paragraphIdx].end < wordend) return;
     if (tag == "hot") {
-      for (let i = wordstart; i <= wordend; i++) {
+      for (let i = wordstart; i < wordend; i++) {
         project.words[i].ishot = true;
       }
     } else {
-      for (let i = wordstart; i <= wordend; i++) {
+      for (let i = wordstart; i < wordend; i++) {
         project.words[i].type = tag;
       }
     }
