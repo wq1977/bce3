@@ -1,94 +1,80 @@
 <script setup>
-import { ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { computed } from 'vue';
 import { useProjectStore } from '../stores/project'
-import moment from 'moment'
+import Draggable from 'vuedraggable'
 import { Icon } from '@iconify/vue';
+import ProjectCard from '../component/ProjectCard.vue'
 const projStore = useProjectStore();
-const router = useRouter()
-const titleRefs = ref({})
-const deleteConfirm = ref(false)
-let toDelete = null
-function doDelete(proj) {
-    deleteConfirm.value = true
-    toDelete = proj
-}
-
-function setTitleRef(el, id) {
-    titleRefs.value[id] = el
-}
-
-function fmtDate(ts) {
-    return moment(ts).format('YYYY-MM-DD')
-}
-function createProject() {
-    const id = projStore.newProject()
+function createProject(options = {}) {
+    const id = projStore.newProject(options)
     router.push(`/editor/track?id=${id}`)
 }
 
-async function setTitle(event, project) {
-    const text = event.target.textContent.trim()
-    project.name = text
-    await projStore.saveProject(project)
+function saveAlbum(album) {
+    album.updated = new Date().getTime()
+    projStore.saveAlbums()
 }
 
-function editTitle(id) {
-    titleRefs.value[id].focus()
-    const selection = window.getSelection();
-    const range = document.createRange();
-    range.selectNodeContents(titleRefs.value[id]);
-    selection.removeAllRanges();
-    selection.addRange(range);
-}
+const noAlbumList = computed({
+    get: () => projStore.list.filter(p => p.tracks.length && !p.album),
+    set(list) {
+        list.forEach(proj => {
+            proj.album = ''
+            projStore.saveProject(proj)
+        })
+    }
+})
 
-async function handleAction() {
-    await projStore.deleteProject(toDelete)
-}
+const albums = computed(() => projStore.albums.map(album => ({
+    ...album,
+    list: computed({
+        get: () => projStore.list.filter(p => p.tracks.length && p.album == album.id),
+        set(list) {
+            list.forEach(proj => {
+                proj.album = album.id
+                projStore.saveProject(proj)
+            })
+        }
+    })
+})))
 
 </script>
 <template>
-    <div class="flex flex-wrap items-center justify-center bg-gradient-to-r from-teal-300 to-blue-500 p-8">
-        <div v-for="proj in projStore.list.filter(p => p.tracks.length)"
-            @click="$router.push({ path: `/editor/${proj.words && proj.words.length ? 'paragraph' : 'track'}`, query: { id: proj.id } })"
-            class="group relative border cursor-pointer rounded m-2 p-2 flex flex-col w-[200px]">
-            <span @blur="setTitle($event, proj)" :ref="el => setTitleRef(el, proj.id)" contenteditable
-                class="mr-5 text-xl font-black text-ellipsis overflow-hidden truncate"> {{ proj.name || '未命名'
-                }}
-            </span>
-            <span class="text-xs mt-1 text-gray-600">ID: {{ proj.id }}</span>
-            <span class="text-xs text-right mt-5 text-gray-500">{{ fmtDate(proj.modified) }}</span>
-            <Icon @click.stop="doDelete(proj)" icon="fluent:delete-12-regular"
-                class="group-hover:inline hidden absolute right-1 top-1 text-gray-300 hover:text-gray-500" />
-            <Icon @click.stop="editTitle(proj.id)" icon="akar-icons:edit"
-                class="group-hover:inline hidden absolute right-1 top-[25px] text-gray-300 hover:text-gray-500" />
+    <div>
+        <div class="text-right">
+            <button class="bg-gray-200 border rounded px-4 py-2" @click="projStore.newAlbum()">创建新专辑</button>
+        </div>
+        <Draggable v-if="noAlbumList.length" v-model="noAlbumList" group="card" item-key="id"
+            class="flex flex-wrap items-center  justify-center bg-gradient-to-r from-teal-300 to-blue-500 p-8">
+            <template #item="{ element: proj }">
+                <ProjectCard :project="proj" />
+            </template>
+            <template #footer>
+                <div @click="createProject"
+                    class="text-white/70 hover:text-gray-500 group relative border cursor-pointer rounded m-2 p-2 flex items-center justify-center w-[200px]  h-[100px]">
+                    <Icon class="text-[40px]" icon="typcn:plus"></Icon>
+                </div>
+                <div v-for="i in [1, 2, 3, 4, 5]" class=" w-[200px] h-[0]">
+                </div>
+            </template>
+        </Draggable>
+        <div v-for="album in albums" class="flex flex-col mt-4">
+            <input class="font-bold text-lg" v-model="album.name" placeholder="未命名专辑" @change="saveAlbum(album)" />
+            <input class="text-sm text-gray-500" v-model="album.desc" placeholder="添加专辑描述" @change="saveAlbum(album)" />
+            <Draggable group="card" v-model="album.list.value" item-key="id"
+                class="flex flex-wrap items-center mt-2 justify-center bg-gradient-to-r from-teal-300 to-blue-500 p-8">
+                <template #item="{ element: proj }">
+                    <ProjectCard :project="proj" />
+                </template>
+                <template #footer>
+                    <div @click="createProject({ album: album.id })"
+                        class="text-white/70 hover:text-gray-500 group relative border cursor-pointer rounded m-2 p-2 flex items-center justify-center w-[200px]  h-[100px]">
+                        <Icon class="text-[40px]" icon="typcn:plus"></Icon>
+                    </div>
+                    <div v-for="i in [1, 2, 3, 4, 5]" class="w-[200px] h-[0]">
+                    </div>
+                </template>
+            </Draggable>
         </div>
     </div>
-    <div class="flex justify-center p-5">
-        <button @click="createProject" class="border rounded px-4 py-2">来一集新播客</button>
-    </div>
-    <AlertDialogRoot v-model:open="deleteConfirm">
-        <AlertDialogPortal>
-            <AlertDialogOverlay class="bg-black-gray-900 data-[state=open]:animate-overlayShow fixed inset-0 z-30" />
-            <AlertDialogContent
-                class="z-[100] text-[15px] data-[state=open]:animate-contentShow fixed top-[50%] left-[50%] max-h-[85vh] w-[90vw] max-w-[500px] translate-x-[-50%] translate-y-[-50%] rounded-[6px] bg-white p-[25px] shadow-[hsl(206_22%_7%_/_35%)_0px_10px_38px_-10px,_hsl(206_22%_7%_/_20%)_0px_10px_20px_-15px] focus:outline-none">
-                <AlertDialogTitle class="text-mauve12 m-0 text-[17px] font-semibold">
-                    确定要删除项目 {{ toDelete.name || toDelete.id }} 吗?
-                </AlertDialogTitle>
-                <AlertDialogDescription class="text-mauve11 mt-4 mb-5 text-[15px] leading-normal">
-                    和项目相关的所有文件将被删除并且不可恢复.
-                </AlertDialogDescription>
-                <div class="flex justify-end gap-[25px]">
-                    <AlertDialogCancel
-                        class="text-mauve11 bg-mauve4 hover:bg-mauve5 focus:shadow-mauve7 inline-flex h-[35px] items-center justify-center rounded-[4px] px-[15px] font-semibold leading-none outline-none focus:shadow-[0_0_0_2px]">
-                        取消
-                    </AlertDialogCancel>
-                    <AlertDialogAction
-                        class="text-red11 bg-red4 hover:bg-red5 focus:shadow-red7 inline-flex h-[35px] items-center justify-center rounded-[4px] px-[15px] font-semibold leading-none outline-none focus:shadow-[0_0_0_2px]"
-                        @click="handleAction">
-                        确定
-                    </AlertDialogAction>
-                </div>
-            </AlertDialogContent>
-        </AlertDialogPortal>
-    </AlertDialogRoot>
 </template>

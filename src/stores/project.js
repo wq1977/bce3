@@ -86,6 +86,7 @@ function words2pieces(project, start, end) {
 }
 
 export const useProjectStore = defineStore("project", () => {
+  const albums = ref([]);
   const list = ref([]);
   const shareList = ref([]);
   const stop = ref(null);
@@ -94,7 +95,18 @@ export const useProjectStore = defineStore("project", () => {
       old();
     }
   });
+  function newAlbum() {
+    const id = moment().format("YYYYMMDDHHmmss");
+    albums.value = [{ id, name: "", desc: "" }, ...albums.value];
+  }
   async function load() {
+    const album = await api.call("readfile", "album.json");
+    if (album) {
+      const enc = new TextDecoder("utf-8");
+      const str = enc.decode(album);
+      albums.value = JSON.parse(str);
+    }
+
     list.value = (await api.call("listProjects")) || [];
     for (let proj of list.value) {
       prepare(proj);
@@ -104,6 +116,13 @@ export const useProjectStore = defineStore("project", () => {
     shareList.value =
       (await api.call("listShare", JSON.parse(JSON.stringify(project.cfg)))) ||
       [];
+  }
+  async function saveAlbums() {
+    await api.call(
+      "save2file",
+      "album.json",
+      JSON.parse(JSON.stringify(albums.value))
+    );
   }
   async function saveWords(project) {
     await api.call(
@@ -892,10 +911,11 @@ export const useProjectStore = defineStore("project", () => {
     }
     await saveProject(project);
   }
-  function newProject() {
+  function newProject(options = {}) {
     const id = moment().format("YYYYMMDDHHmmss");
     list.value.push({
       id,
+      ...options,
       name: "",
       modified: new Date().getTime(),
       tracks: [],
@@ -995,6 +1015,7 @@ export const useProjectStore = defineStore("project", () => {
     recognitionProgress.value = p.end / p.duration;
   });
   return {
+    albums,
     list,
     shareList,
     stop,
@@ -1032,6 +1053,8 @@ export const useProjectStore = defineStore("project", () => {
     getProjectSources,
     resetMusicBuffer,
     refreshShareList,
+    saveAlbums,
+    newAlbum,
   };
 });
 
