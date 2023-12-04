@@ -4,7 +4,9 @@ import { useProjectStore } from '../stores/project'
 import Draggable from 'vuedraggable'
 import { Icon } from '@iconify/vue';
 import ProjectCard from '../component/ProjectCard.vue'
+import { useRouter } from 'vue-router';
 const projStore = useProjectStore();
+const router = useRouter()
 function createProject(options = {}) {
     const id = projStore.newProject(options)
     router.push(`/editor/track?id=${id}`)
@@ -12,6 +14,12 @@ function createProject(options = {}) {
 
 function saveAlbum(album) {
     album.updated = new Date().getTime()
+    const { list, ...other } = album
+    for (let i = 0; i < projStore.albums.length; i++) {
+        if (projStore.albums[i].id == album.id) {
+            projStore.albums[i] = { ...other }
+        }
+    }
     projStore.saveAlbums()
 }
 
@@ -50,28 +58,30 @@ const albums = computed(() => projStore.albums.map(album => ({
                 <ProjectCard :project="proj" />
             </template>
             <template #footer>
-                <div @click="createProject"
+                <div @click="createProject({ cfg: {} })"
                     class="text-white/70 hover:text-gray-500 group relative border cursor-pointer rounded m-2 p-2 flex items-center justify-center w-[200px]  h-[100px]">
                     <Icon class="text-[40px]" icon="typcn:plus"></Icon>
                 </div>
-                <div v-for="i in [1, 2, 3, 4, 5]" class=" w-[200px] h-[0]">
+                <div v-for="i in [1, 2, 3, 4, 5]" class=" w-[200px] m-2 h-[0]">
                 </div>
             </template>
         </Draggable>
         <div v-for="album in albums" class="flex flex-col mt-4">
-            <input class="font-bold text-lg" v-model="album.name" placeholder="未命名专辑" @change="saveAlbum(album)" />
-            <input class="text-sm text-gray-500" v-model="album.desc" placeholder="添加专辑描述" @change="saveAlbum(album)" />
+            <input class="font-bold text-lg self-start p-1" v-model="album.name" placeholder="未命名专辑"
+                @change="saveAlbum(album)" />
+            <input class="text-sm text-gray-500 self-start p-1" v-model="album.desc" placeholder="添加专辑描述"
+                @change="saveAlbum(album)" />
             <Draggable group="card" v-model="album.list.value" item-key="id"
                 class="flex flex-wrap items-center mt-2 justify-center bg-gradient-to-r from-teal-300 to-blue-500 p-8">
                 <template #item="{ element: proj }">
                     <ProjectCard :project="proj" />
                 </template>
                 <template #footer>
-                    <div @click="createProject({ album: album.id })"
+                    <div @click="createProject({ album: album.id, cfg: {} })"
                         class="text-white/70 hover:text-gray-500 group relative border cursor-pointer rounded m-2 p-2 flex items-center justify-center w-[200px]  h-[100px]">
                         <Icon class="text-[40px]" icon="typcn:plus"></Icon>
                     </div>
-                    <div v-for="i in [1, 2, 3, 4, 5]" class="w-[200px] h-[0]">
+                    <div v-for="i in [1, 2, 3, 4, 5]" class="w-[200px] m-2 h-[0]">
                     </div>
                 </template>
             </Draggable>
