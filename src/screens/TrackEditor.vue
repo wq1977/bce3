@@ -41,8 +41,10 @@ async function setProgress() {
     }
 }
 
-watch(() => store.playProgress, async () => {
-    playProgress.value = [store.playProgress * 100];
+watch(() => store.progress, async () => {
+    if (store.progressType == 'play') {
+        playProgress.value = [store.progress * 100];
+    }
 })
 
 function playTrack() {
@@ -88,15 +90,15 @@ async function doRecognition() {
             </template>
         </Draggable>
     </div>
-    <div v-if="store.loading" class="mt-5 flex items-center justify-center h-[15px] rounded-lg ">
+    <div v-if="store.progressType == 'load'" class="mt-5 flex items-center justify-center h-[15px] rounded-lg ">
         <div
             class="px-[30vw] py-2 text-xs font-medium leading-none text-center text-blue-800 bg-blue-200 rounded-full animate-pulse">
             loading...</div>
     </div>
-    <div v-else-if="store.recognitionProgress >= 0" class="mt-5 flex items-center justify-center h-[15px] rounded-lg ">
+    <div v-else-if="store.progressType == 'recognition'" class="mt-5 flex items-center justify-center h-[15px] rounded-lg ">
         <div
             class="px-[30vw] py-2 text-xs font-medium leading-none text-center text-blue-800 bg-blue-200 rounded-full animate-pulse">
-            正在识别 {{ (store.recognitionProgress * 100).toFixed(2) }} % ... </div>
+            正在识别 {{ (store.progress * 100).toFixed(2) }} % ... </div>
     </div>
     <div class="mt-[50px] flex items-center justify-center">
         <label for="track-selector">
@@ -107,10 +109,10 @@ async function doRecognition() {
         </label>
         <button @click="doRecognition" :disabled="store.recognitionProgress >= 0 || store.projectTrackLen(project) <= 0"
             class="disabled:text-gray-300 disabled:hover:bg-gray-200 mr-2 w-[100px] h-[35px] bg-gray-200 text-blue-500 font-semibold hover:bg-gray-300 shadow-sm inline-flex  items-center justify-center rounded-[4px] px-[15px] leading-none outline-none transition-all">开始识别</button>
-        <button :disabled="store.recognitionProgress >= 0 || store.projectTrackLen(project) <= 0" v-if="!store.stop"
+        <button :disabled="store.progressType == 'recognition' || store.projectTrackLen(project) <= 0" v-if="!store.stop"
             @click="playTrack"
             class="disabled:text-gray-300 disabled:hover:bg-gray-200 mr-2 w-[100px] h-[35px] bg-gray-200 text-blue-500 font-semibold hover:bg-gray-300 shadow-sm inline-flex  items-center justify-center rounded-[4px] px-[15px] leading-none outline-none transition-all">播放</button>
-        <button :disabled="store.recognitionProgress >= 0" v-else @click="() => { store.stop(); store.stop = null; }"
+        <button :disabled="store.progressType == 'recognition'" v-else @click="() => { store.stop(); store.stop = null; }"
             class="disabled:text-gray-300 disabled:hover:bg-gray-200 mr-2 w-[100px] h-[35px] bg-gray-200 text-blue-500 font-semibold hover:bg-gray-300 shadow-sm inline-flex  items-center justify-center rounded-[4px] px-[15px] leading-none outline-none transition-all">停止</button>
     </div>
 </template>

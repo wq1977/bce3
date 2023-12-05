@@ -8,8 +8,8 @@ const S2T_SAMPLE_RATE = 44100;
 const GENURATE_SAMPLE_RATE = 44100;
 
 let beepBuffer = null;
-const loading = ref(false);
-const playProgress = ref(0);
+const progress = ref(0);
+const progressType = ref("");
 const buffers = {};
 
 //某个track的某个buffer如果全局start和end的时候的offset和duration
@@ -249,14 +249,15 @@ export const useProjectStore = defineStore("project", () => {
     for (let track of project.tracks) {
       for (let idx = 0; idx < track.origin.length; idx++) {
         if (!track.origin[idx].buffer) {
-          loading.value = true;
+          progressType.value = "load";
+          progress.value = -1;
           const fileBuffer = await api.call(
             "readfile",
             project.id,
             track.origin[idx].path
           );
           const buffer = await context.decodeAudioData(fileBuffer.buffer);
-          loading.value = false;
+          progressType.value = "";
           track.origin[idx].buffer = buffer;
         }
       }
@@ -318,23 +319,38 @@ export const useProjectStore = defineStore("project", () => {
     }
   }
 
+  //因为某个工程文件内容发生了变更而发布这个工程以及关联的专辑内容
+  async function doPublish(project) {}
+
+  function FloatArray2Int16(floatbuffer) {
+    var int16Buffer = new Int16Array(floatbuffer.length);
+    for (var i = 0, len = floatbuffer.length; i < len; i++) {
+      if (floatbuffer[i] < 0) {
+        int16Buffer[i] = 0x8000 * floatbuffer[i];
+      } else {
+        int16Buffer[i] = 0x7fff * floatbuffer[i];
+      }
+    }
+    return int16Buffer;
+  }
+  //导出，渲染工程输出文件，转换成mp3，并且保存最终结果
   async function doExport(project) {
-    const path = await api.call("saveDialog", {
-      title: "保存文件",
-      defaultPath: `${project.id}.wav`,
-      filters: [
-        {
-          name: "wav",
-          extensions: [".wav"],
-        },
-      ],
-    });
-    if (path) {
+    let screenLock = await navigator.wakeLock.request("screen");
+    try {
       await loadTracks(project);
       const allsource = getProjectSources(project);
       const buffer = await getSourcesBuffer(allsource);
-      await api.call("save2file", path, toWav(buffer));
+      if (buffer) {
+        const channels = [];
+        for (let i = 0; i < buffer.numberOfChannels; i++) {
+          channels.push(FloatArray2Int16(buffer.getChannelData(i)));
+        }
+        await api.call("save2mp3", project.id, "final.mp3", channels);
+      }
+    } catch (err) {
+      console.log(err);
     }
+    screenLock.release();
   }
 
   function prepareParagraphPieceForPlay(project, paragraph) {
@@ -519,6 +535,7 @@ export const useProjectStore = defineStore("project", () => {
       const paragraph = validParagraphs[idx];
       lastParagraphDuration = getParagraphDuration(paragraph);
       when += paragraphDelay;
+      paragraph.when = when; //so we know when to play paragraph in project default memo
       if (project.cfg.bgm && project.cfg.bgm.snake) {
         bgmSource.volumns.push({
           at: when - 2 * CHANGE_VOLUMN_DURATION,
@@ -672,13 +689,16 @@ export const useProjectStore = defineStore("project", () => {
     });
     function outputTimestamps() {
       const ts = ctx.currentTime;
-      playProgress.value = (ts + seekPosition) / totalLen;
+      progressType.value = "play";
+      progress.value = (ts + seekPosition) / totalLen;
       rAF = requestAnimationFrame(outputTimestamps);
     }
     let rAF = requestAnimationFrame(outputTimestamps);
     nodes[nodes.length - 1].node.onended = function () {
       stop.value && stop.value();
       stop.value = null;
+      progressType.value = "";
+      progress.value = 0;
     };
     stop.value = () => {
       nodes.forEach(({ node }) => {
@@ -811,13 +831,7 @@ export const useProjectStore = defineStore("project", () => {
       Math.ceil(totalLen * GENURATE_SAMPLE_RATE),
       GENURATE_SAMPLE_RATE
     );
-    const g = offlineCtx.createGain();
-    g.gain.value = 1;
-    g.connect(offlineCtx.destination);
-    const nodes = getPlayNodes(offlineCtx, g, sources);
-    for (let { when, offset, duration, node } of nodes) {
-      node.start(when, offset, duration);
-    }
+    play(sources, 0, offlineCtx);
     return await offlineCtx.startRendering();
   }
 
@@ -979,9 +993,9 @@ export const useProjectStore = defineStore("project", () => {
     }
     return words;
   }
-  const recognitionProgress = ref(-1);
   async function recognition(project) {
-    recognitionProgress.value = 0;
+    progressType.value = "recognition";
+    progress.value = 0;
     let screenLock = await navigator.wakeLock.request("screen");
     const lenlimit = projectTrackLen(project);
     const offlineCtx = new OfflineAudioContext(1, lenlimit, S2T_SAMPLE_RATE);
@@ -991,7 +1005,7 @@ export const useProjectStore = defineStore("project", () => {
     project.words = formatWords(s2t, Math.round(lenlimit * S2T_SAMPLE_RATE));
     await saveWords(project);
     screenLock.release();
-    recognitionProgress.value = -1;
+    progressType.value = "";
   }
 
   function getHotLines(project) {
@@ -1012,16 +1026,20 @@ export const useProjectStore = defineStore("project", () => {
   }
   load();
   api.on("recognition-progress", "project-store", function (p) {
-    recognitionProgress.value = p.end / p.duration;
+    progressType.value = p.end ? "recognition" : "";
+    progress.value = p.end ? p.end / p.duration : 0;
+  });
+  api.on("mp3-progress", "project-store", function (p) {
+    progressType.value = p.progress ? "mp3" : "";
+    progress.value = p.progress || 0;
   });
   return {
     albums,
     list,
     shareList,
     stop,
-    loading,
-    playProgress,
-    recognitionProgress,
+    progressType,
+    progress,
     load,
     play,
     prepare,
@@ -1055,6 +1073,7 @@ export const useProjectStore = defineStore("project", () => {
     refreshShareList,
     saveAlbums,
     newAlbum,
+    doPublish,
   };
 });
 

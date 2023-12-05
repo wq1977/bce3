@@ -95,8 +95,10 @@ async function setProgress() {
     }
 }
 
-watch(() => store.playProgress, async () => {
-    playProgress.value = [store.playProgress * 100];
+watch(() => store.progress, async () => {
+    if (store.progressType == 'play') {
+        playProgress.value = [store.progress * 100];
+    }
 })
 
 function vols2line(piece) {

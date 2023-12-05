@@ -1,6 +1,6 @@
+import api from "./be/api";
 const { app, BrowserWindow, ipcMain } = require("electron");
 const path = require("path");
-import api from "./be/api";
 Object.keys(api).forEach((name) => {
   ipcMain.handle(name, api[name]);
 });

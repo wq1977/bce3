@@ -40,6 +40,34 @@ const api = {
       "projects"
     );
   },
+  async save2mp3(event, projname, path, channels) {
+    let abspath;
+    if (!channels) {
+      //支持少一个参数绝对值路径模式
+      if (projname.indexOf("\\") >= 0 || projname.indexOf("/") >= 0) {
+        abspath = projname;
+      } else {
+        abspath = require("path").join(PROJ_BASE, projname);
+      }
+      channels = path;
+    } else {
+      abspath = require("path").join(PROJ_BASE, projname, path);
+    }
+    return new Promise((r) => {
+      event.sender.send("mp3-progress", { running: true, progress: 0 });
+      const { Worker } = require("worker_threads");
+      const worker = new Worker(require("path").join(__dirname, "wav2mp3.js"), {
+        workerData: { path: abspath, channels },
+      });
+      worker.on("message", (p) => {
+        event.sender.send("mp3-progress", { running: true, ...p });
+      });
+      worker.on("exit", (code) => {
+        event.sender.send("mp3-progress", { running: false, code });
+        r();
+      });
+    });
+  },
   async save2file(event, projname, path, content) {
     let abspath;
     if (content && !projname) {

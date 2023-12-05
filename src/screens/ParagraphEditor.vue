@@ -1,8 +1,8 @@
 <script setup>
+import { Icon } from '@iconify/vue'
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import WordAdjust from '../component/WordAdjust.vue'
 import Draggable from 'vuedraggable'
-import { Icon } from '@iconify/vue'
 import { useRoute } from 'vue-router';
 import { useProjectStore } from '../stores/project';
 const store = useProjectStore()

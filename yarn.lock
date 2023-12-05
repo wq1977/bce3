@@ -2543,6 +2543,13 @@ keyv@^4.0.0:
   dependencies:
     json-buffer "3.0.1"
 
+lamejstmp@^1.0.1:
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/lamejstmp/-/lamejstmp-1.0.1.tgz#d304b74837371efe3c4812927ce429b131b82873"
+  integrity sha512-eEENqMTpiDNTaeOWWbv58KVT4uh9tP7XqpG+aODm9U2eRHwH8Hsx3OnNKxd3noVN6cHmQomv5HQ9N7tzTSVxNQ==
+  dependencies:
+    use-strict "1.0.1"
+
 level-supports@^4.0.0:
   version "4.0.1"
   resolved "https://registry.yarnpkg.com/level-supports/-/level-supports-4.0.1.tgz#431546f9d81f10ff0fea0e74533a0e875c08c66a"
@@ -4233,6 +4240,11 @@ update-browserslist-db@^1.0.13:
   dependencies:
     escalade "^3.1.1"
     picocolors "^1.0.0"
+
+use-strict@1.0.1:
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/use-strict/-/use-strict-1.0.1.tgz#0bb80d94f49a4a05192b84a8c7d34e95f1a7e3a0"
+  integrity sha512-IeiWvvEXfW5ltKVMkxq6FvNf2LojMKvB2OCeja6+ct24S1XOmQw2dGr2JyndwACWAGJva9B7yPHwAmeA9QCqAQ==
 
 username@^5.1.0:
   version "5.1.0"
