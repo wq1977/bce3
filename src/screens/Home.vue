@@ -25,10 +25,11 @@ function saveAlbum(album) {
 }
 
 const noAlbumList = computed({
-    get: () => projStore.list.filter(p => p.tracks.length && !p.album),
+    get: () => projStore.list.filter(p => p.tracks.length && !p.album).sort((a, b) => (a.albumIndex || 0) - (b.albumIndex || 0)),
     set(list) {
-        list.forEach(proj => {
+        list.forEach((proj, idx) => {
             proj.album = ''
+            proj.albumIndex = idx
             projStore.saveProject(proj)
         })
     }
@@ -37,10 +38,11 @@ const noAlbumList = computed({
 const albums = computed(() => projStore.albums.map(album => ({
     ...album,
     list: computed({
-        get: () => projStore.list.filter(p => p.tracks.length && p.album == album.id),
+        get: () => projStore.list.filter(p => p.tracks.length && p.album == album.id).sort((a, b) => (a.albumIndex || 0) - (b.albumIndex || 0)),
         set(list) {
-            list.forEach(proj => {
+            list.forEach((proj, idx) => {
                 proj.album = album.id
+                proj.albumIndex = idx
                 projStore.saveProject(proj)
             })
         }
@@ -79,7 +81,7 @@ const albums = computed(() => projStore.albums.map(album => ({
             </div>
             <Draggable group="card" v-model="album.list.value" item-key="id"
                 class="flex flex-wrap items-center mt-2 justify-center bg-gradient-to-r from-teal-300 to-blue-500 p-8">
-                <template #item="{ element: proj }">
+                <template #item="{ element: proj, index }">
                     <ProjectCard :project="proj" />
                 </template>
                 <template #footer>

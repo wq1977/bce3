@@ -177,7 +177,9 @@ function pieceMouseup() {
 </script>
 <template>
     <div v-if="project" class="relative">
-        <div class="text-2xl font-black antialiased p-2">{{ project.name || project.id }}</div>
+        <div class="text-2xl font-black antialiased p-2">
+            <input v-model="project.name" @change="store.saveProject(project)" placeholder="请输入单集标题" />
+        </div>
         <ContextMenuRoot :modal="false">
             <ContextMenuTrigger :disabled="!selWordEnd">
                 <div class="mr-[320px]">

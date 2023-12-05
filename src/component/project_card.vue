@@ -1,12 +1,10 @@
 <script setup>
-import { ref } from 'vue';
-import { useProjectStore } from '../stores/project';
+import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import moment from 'moment'
 import { Icon } from '@iconify/vue';
 
-defineProps(['project'])
-const store = useProjectStore()
+const props = defineProps(['project'])
 const router = useRouter()
 const deleteConfirm = ref(false)
 let toDelete = null
@@ -15,6 +13,8 @@ function doDelete(proj) {
     deleteConfirm.value = true
     toDelete = proj
 }
+
+const eTitle = computed(() => `E${props.project.albumIndex ? props.project.albumIndex >= 10 ? props.project.albumIndex + 1 : `0${props.project.albumIndex + 1}` : '01'}`)
 
 function fmtDate(ts) {
     return moment(ts).format('YYYY-MM-DD')
@@ -28,8 +28,8 @@ async function handleAction() {
 <template>
     <div @click="router.push(`/editor/paragraph?id=${project.id}`)"
         class="group relative border cursor-pointer rounded m-2 p-2 flex flex-col w-[200px] h-[100px]">
-        <span ref="editor" class="mr-5 bg-transparent text-xl font-black text-ellipsis overflow-hidden truncate">
-            {{ project.name || project.id }}
+        <span class="mr-5 bg-transparent text-xl font-black text-ellipsis overflow-hidden truncate">
+            <span class="font-normal">{{ eTitle }}</span> {{ project.name || project.id }}
         </span>
         <span class="text-xs mt-1 text-gray-600">ID: {{ project.id }}</span>
         <span class="text-xs text-right mt-5 text-gray-500">{{ fmtDate(project.modified) }}</span>
