@@ -319,9 +319,6 @@ export const useProjectStore = defineStore("project", () => {
     }
   }
 
-  //因为某个工程文件内容发生了变更而发布这个工程以及关联的专辑内容
-  async function doPublish(project) {}
-
   function FloatArray2Int16(floatbuffer) {
     var int16Buffer = new Int16Array(floatbuffer.length);
     for (var i = 0, len = floatbuffer.length; i < len; i++) {
@@ -346,6 +343,7 @@ export const useProjectStore = defineStore("project", () => {
           channels.push(FloatArray2Int16(buffer.getChannelData(i)));
         }
         await api.call("save2mp3", project.id, "final.mp3", channels);
+        return buffer.duration;
       }
     } catch (err) {
       console.log(err);
@@ -1024,6 +1022,30 @@ export const useProjectStore = defineStore("project", () => {
       delete buffers[key];
     }
   }
+  async function doPublish(project) {
+    const albumid = project.album;
+    const album = albums.value.filter((a) => a.id == albumid)[0];
+    if (!album) return;
+    const projects = list.value.filter((p) => p.album == albumid);
+    await api.call(
+      "publish",
+      JSON.parse(
+        JSON.stringify({
+          ...album,
+          episodes: projects.map((p) => ({
+            id: p.id,
+            album_index: p.albumIndex,
+            updateat: p.updateat,
+            title: p.name,
+            desc: p.desc,
+            duration: p.duration,
+          })),
+        })
+      ),
+      project.id
+    );
+  }
+
   load();
   api.on("recognition-progress", "project-store", function (p) {
     progressType.value = p.end ? "recognition" : "";

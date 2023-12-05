@@ -34,8 +34,10 @@ async function init() {
 
 async function doPublish() {
     project.value.desc = desc.value ? desc.value.trim() : ''
+    project.value.updateat = new Date().getTime()
+    const duration = await store.doExport(project.value)
+    project.value.duration = duration
     store.saveProject(project.value)
-    await store.doExport(project.value)
     await store.doPublish(project.value)
 }
 

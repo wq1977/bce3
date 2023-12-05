@@ -68,6 +68,30 @@ const api = {
       });
     });
   },
+  async publish(event, album, projectid) {
+    const indexPathBase = require("path").join(PROJ_BASE, "www", album.id);
+    if (!require("fs").existsSync(indexPathBase)) {
+      require("fs").mkdirSync(indexPathBase, { recursive: true });
+    }
+    const assetsPath = require("path").join(__dirname, "..", "..", "assets");
+    const templateBase = require("path").join(
+      assetsPath,
+      "templates",
+      "default"
+    );
+    const indexTemplatePath = require("path").join(templateBase, "index.html");
+    const indexTemplate = require("fs")
+      .readFileSync(indexTemplatePath)
+      .toString();
+    const targetIndexPath = require("path").join(indexPathBase, "index.html");
+    require("fs").writeFileSync(
+      targetIndexPath,
+      indexTemplate.replace("__PRE_DATA__", JSON.stringify(album))
+    );
+    const targetAssetsBase = require("path").join(indexPathBase, "assets");
+    const srcAssetsBase = require("path").join(templateBase, "assets");
+    require("fs").cpSync(srcAssetsBase, targetAssetsBase, { recursive: true });
+  },
   async save2file(event, projname, path, content) {
     let abspath;
     if (content && !projname) {
