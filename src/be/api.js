@@ -85,6 +85,13 @@ const api = {
     const mp3Path = require("path").join(PROJ_BASE, projectid, "final.mp3");
     const mp3target = require("path").join(indexPathBase, `${projectid}.mp3`);
     require("fs").cpSync(mp3Path, mp3target);
+
+    const targetIndexPath = require("path").join(indexPathBase, "index.html");
+    require("fs").writeFileSync(
+      targetIndexPath,
+      indexTemplate.replace("__PRE_DATA__", JSON.stringify(album))
+    );
+
     const { episodes, ...other } = album;
     for (let episode of album.episodes) {
       const projectPage = require("path").join(

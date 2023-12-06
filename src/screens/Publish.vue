@@ -60,7 +60,7 @@ async function doPublish() {
             </div>
         </div>
         <div class="flex-1 flex flex-col items-center justify-center mt-[10px]">
-            <textarea class="flex-1 border p-2 w-full h-full" v-model="desc" />
+            <textarea class="font-mono flex-1 border p-2 w-full h-full" v-model="desc" />
         </div>
     </div>
 </template>
