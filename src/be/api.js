@@ -74,23 +74,36 @@ const api = {
       require("fs").mkdirSync(indexPathBase, { recursive: true });
     }
     const assetsPath = require("path").join(__dirname, "..", "..", "assets");
-    const templateBase = require("path").join(
-      assetsPath,
-      "templates",
-      "default"
-    );
+    const templateBase = require("path").join(assetsPath, "templates", "plain");
     const indexTemplatePath = require("path").join(templateBase, "index.html");
+    const targetAssetsBase = require("path").join(indexPathBase);
+    const srcAssetsBase = require("path").join(templateBase);
+    require("fs").cpSync(srcAssetsBase, targetAssetsBase, { recursive: true });
     const indexTemplate = require("fs")
       .readFileSync(indexTemplatePath)
       .toString();
-    const targetIndexPath = require("path").join(indexPathBase, "index.html");
-    require("fs").writeFileSync(
-      targetIndexPath,
-      indexTemplate.replace("__PRE_DATA__", JSON.stringify(album))
-    );
-    const targetAssetsBase = require("path").join(indexPathBase, "assets");
-    const srcAssetsBase = require("path").join(templateBase, "assets");
-    require("fs").cpSync(srcAssetsBase, targetAssetsBase, { recursive: true });
+    const mp3Path = require("path").join(PROJ_BASE, projectid, "final.mp3");
+    const mp3target = require("path").join(indexPathBase, `${projectid}.mp3`);
+    require("fs").cpSync(mp3Path, mp3target);
+    const { episodes, ...other } = album;
+    for (let episode of album.episodes) {
+      const projectPage = require("path").join(
+        indexPathBase,
+        `${episode.id}.html`
+      );
+      require("fs").writeFileSync(
+        projectPage,
+        indexTemplate.replace(
+          "__PRE_DATA__",
+          JSON.stringify({
+            ...episode,
+            album: {
+              ...other,
+            },
+          })
+        )
+      );
+    }
   },
   async save2file(event, projname, path, content) {
     let abspath;
