@@ -8,8 +8,11 @@ const store = useProjectStore()
 <template>
     <div class="p-10">
         <NavigationMenuRoot class="left-0 right-0 top-[30px] flex justify-center">
-            <NavigationMenuList v-if="store.progressType != 'load'"
-                class="center shadow-gray-300 m-0 flex list-none rounded-[6px] bg-white p-1 shadow-[0_2px_10px]">
+            <NavigationMenuList
+                class="relative overflow-hidden center shadow-gray-300 m-0 flex list-none rounded-[6px] bg-white p-1 shadow-[0_2px_10px]">
+                <div v-if="store.progressType == 'load'"
+                    class="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 via-red-500 to-green-500 animate-flow">
+                </div>
                 <NavigationMenuItem>
                     <NavigationMenuLink :data-active="route.path == '/editor/track'" as-child
                         class="data-[active=true]:text-sky-600 text-gray-500  hover:bg-gray-100 focus:shadow-green-700 group flex select-none items-center justify-between gap-[2px] rounded-[4px] px-3 py-2 text-[15px] font-medium leading-none outline-none ">
@@ -63,10 +66,6 @@ const store = useProjectStore()
                         </RouterLink>
                     </NavigationMenuLink>
                 </NavigationMenuItem>
-            </NavigationMenuList>
-            <NavigationMenuList v-else
-                class="center shadow-gray-300 m-0 flex list-none rounded-[6px] bg-white p-1 shadow-[0_2px_10px]">
-                <NavigationMenuItem> <span class="py-1 px-2"> loading ...</span> </NavigationMenuItem>
             </NavigationMenuList>
             <NavigationMenuViewport />
         </NavigationMenuRoot>

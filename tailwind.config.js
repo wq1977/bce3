@@ -2,7 +2,11 @@
 module.exports = {
   content: ["./src/**/*.{vue,css}"],
   theme: {
-    extend: {},
+    extend: {
+      animation: {
+        flow: "flow 2s linear infinite",
+      },
+    },
   },
   plugins: [],
 };

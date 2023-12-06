@@ -52,7 +52,7 @@ const albums = computed(() => projStore.albums.map(album => ({
 </script>
 <template>
     <div class="p-10">
-        <div class="text-right">
+        <div class="text-right relative">
             <button class="bg-gray-200 border rounded px-4 py-2" @click="projStore.newAlbum()">创建新专辑</button>
         </div>
         <Draggable v-if="noAlbumList.length" v-model="noAlbumList" group="card" item-key="id"

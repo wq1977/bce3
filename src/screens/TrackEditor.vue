@@ -90,12 +90,7 @@ async function doRecognition() {
             </template>
         </Draggable>
     </div>
-    <div v-if="store.progressType == 'load'" class="mt-5 flex items-center justify-center h-[15px] rounded-lg ">
-        <div
-            class="px-[30vw] py-2 text-xs font-medium leading-none text-center text-blue-800 bg-blue-200 rounded-full animate-pulse">
-            loading...</div>
-    </div>
-    <div v-else-if="store.progressType == 'recognition'" class="mt-5 flex items-center justify-center h-[15px] rounded-lg ">
+    <div v-if="store.progressType == 'recognition'" class="mt-5 flex items-center justify-center h-[15px] rounded-lg ">
         <div
             class="px-[30vw] py-2 text-xs font-medium leading-none text-center text-blue-800 bg-blue-200 rounded-full animate-pulse">
             正在识别 {{ (store.progress * 100).toFixed(2) }} % ... </div>
