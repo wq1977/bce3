@@ -82,8 +82,9 @@ const api = {
     const assetsPath = require("path").join(__dirname, "..", "..", "assets");
     const templateBase = require("path").join(assetsPath, "templates", "plain");
     const indexTemplatePath = require("path").join(templateBase, "index.html");
-    const targetAssetsBase = require("path").join(indexPathBase);
-    const srcAssetsBase = require("path").join(templateBase);
+    const targetAssetsBase = require("path").join(indexPathBase, "assets");
+    const srcAssetsBase = require("path").join(templateBase, "assets");
+    require("fs").rmSync(targetAssetsBase, { recursive: true, force: true });
     require("fs").cpSync(srcAssetsBase, targetAssetsBase, { recursive: true });
     const indexTemplate = require("fs")
       .readFileSync(indexTemplatePath)

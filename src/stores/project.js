@@ -1047,8 +1047,12 @@ export const useProjectStore = defineStore("project", () => {
     );
   }
 
-  function getAlbumViewUrl(album) {
-    return `http://127.0.0.1:${VIEW_PORT}/${album}/`;
+  function getViewUrl(album, project) {
+    if (project) {
+      return `http://127.0.0.1:${VIEW_PORT}/${album}/${project}.html`;
+    } else {
+      return `http://127.0.0.1:${VIEW_PORT}/${album}/`;
+    }
   }
 
   load();
@@ -1101,7 +1105,7 @@ export const useProjectStore = defineStore("project", () => {
     saveAlbums,
     newAlbum,
     doPublish,
-    getAlbumViewUrl,
+    getViewUrl,
   };
 });
 

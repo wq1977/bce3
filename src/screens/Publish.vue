@@ -1,7 +1,8 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { ref } from 'vue'
 import { useRoute } from 'vue-router';
 import { useProjectStore } from '../stores/project';
+import router from '../router';
 const store = useProjectStore()
 const route = useRoute()
 const project = ref(null);
@@ -39,6 +40,7 @@ async function doPublish() {
     project.value.duration = duration
     store.saveProject(project.value)
     await store.doPublish(project.value)
+    await router.push(`/view?album=${project.value.album}&episode=${project.value.id}`)
 }
 
 </script>
