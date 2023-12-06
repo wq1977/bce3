@@ -5,9 +5,11 @@ import ParagraphEditor from "./screens/ParagraphEditor.vue";
 import TrackEditor from "./screens/TrackEditor.vue";
 import ProjectEditor from "./screens/ProjectEditor.vue";
 import Publisher from "./screens/Publish.vue";
+import Viewer from "./screens/Viewer.vue";
 
 const routes = [
   { path: "/", component: Home },
+  { path: "/view", component: Viewer },
   {
     path: "/editor",
     component: Editor,

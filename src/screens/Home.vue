@@ -51,7 +51,7 @@ const albums = computed(() => projStore.albums.map(album => ({
 
 </script>
 <template>
-    <div>
+    <div class="p-10">
         <div class="text-right">
             <button class="bg-gray-200 border rounded px-4 py-2" @click="projStore.newAlbum()">创建新专辑</button>
         </div>
@@ -72,11 +72,16 @@ const albums = computed(() => projStore.albums.map(album => ({
         <div v-for="album in albums" class="flex flex-col mt-4">
             <div class="flex items-center">
                 <img :src="IconAlbum" class="w-[80px]" />
-                <div class="flex flex-col">
+                <div class="flex flex-1 flex-col">
                     <input class="font-bold text-lg self-start p-1" v-model="album.name" placeholder="未命名专辑"
                         @change="saveAlbum(album)" />
                     <input class="text-sm text-gray-500 self-start p-1 mt-[1px]" v-model="album.desc" placeholder="添加专辑描述"
                         @change="saveAlbum(album)" />
+                </div>
+                <div class="flex flex-col justify-start self-stretch p-3">
+                    <RouterLink :to="`/view?album=${album.id}`">
+                        <Icon class="cursor-pointer" icon="mdi:web" />
+                    </RouterLink>
                 </div>
             </div>
             <Draggable group="card" v-model="album.list.value" item-key="id"

@@ -2,6 +2,7 @@ import { ref, watch } from "vue";
 import { defineStore } from "pinia";
 import moment from "moment";
 import toWav from "audiobuffer-to-wav";
+import { VIEW_PORT } from "../common/common";
 
 const PARAGRAPH_DEFAULT_DELAY = 3;
 const S2T_SAMPLE_RATE = 44100;
@@ -1046,6 +1047,10 @@ export const useProjectStore = defineStore("project", () => {
     );
   }
 
+  function getAlbumViewUrl(album) {
+    return `http://127.0.0.1:${VIEW_PORT}/${album}/`;
+  }
+
   load();
   api.on("recognition-progress", "project-store", function (p) {
     progressType.value = p.end ? "recognition" : "";
@@ -1096,6 +1101,7 @@ export const useProjectStore = defineStore("project", () => {
     saveAlbums,
     newAlbum,
     doPublish,
+    getAlbumViewUrl,
   };
 });
 

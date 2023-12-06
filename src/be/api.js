@@ -3,6 +3,7 @@ const level = require("classic-level");
 const { createHash } = require("crypto");
 import createLogger from "./log";
 import { shares } from "./shares";
+import { VIEW_PORT } from "../common/common";
 
 let db;
 let PROJ_BASE;
@@ -39,6 +40,11 @@ const api = {
       require("electron").app.getPath("userData"),
       "projects"
     );
+    const Koa = require("koa");
+    const serve = require("koa-static");
+    const app = new Koa();
+    app.use(serve(require("path").join(PROJ_BASE, "www")));
+    app.listen(VIEW_PORT);
   },
   async save2mp3(event, projname, path, channels) {
     let abspath;

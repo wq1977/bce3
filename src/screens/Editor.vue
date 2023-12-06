@@ -6,7 +6,7 @@ const route = useRoute()
 const store = useProjectStore()
 </script>
 <template>
-    <div>
+    <div class="p-10">
         <NavigationMenuRoot class="left-0 right-0 top-[30px] flex justify-center">
             <NavigationMenuList v-if="store.progressType != 'load'"
                 class="center shadow-gray-300 m-0 flex list-none rounded-[6px] bg-white p-1 shadow-[0_2px_10px]">
