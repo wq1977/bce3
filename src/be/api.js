@@ -4,7 +4,6 @@ import createLogger from "./log";
 import { shares } from "./shares";
 import { VIEW_PORT } from "../common/common";
 
-let db;
 let PROJ_BASE;
 const RESOURCE_ROOT = require("path").join(__dirname, "..", "..");
 const log = createLogger("api");
