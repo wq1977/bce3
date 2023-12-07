@@ -1,5 +1,4 @@
 const { shell, dialog, BrowserWindow } = require("electron");
-const level = require("classic-level");
 const { createHash } = require("crypto");
 import createLogger from "./log";
 import { shares } from "./shares";
@@ -13,13 +12,6 @@ const api = {
   versions() {
     return process.versions;
   },
-  async cfgGet(path, def) {
-    try {
-      return await db.get(`config-${path}`);
-    } catch (err) {
-      return def;
-    }
-  },
   async listShare(event, cfg) {
     return await Promise.all(
       shares.map(async (s) => ({
@@ -29,13 +21,7 @@ const api = {
       }))
     );
   },
-  async cfgSet(path, value) {
-    await db.set(`config-${path}`, value);
-  },
   init(dbpath) {
-    db = new level.ClassicLevel(dbpath, {
-      valueEncoding: "json",
-    });
     PROJ_BASE = require("path").join(
       require("electron").app.getPath("userData"),
       "projects"
