@@ -81,7 +81,7 @@ const albums = computed(() => projStore.albums.map(album => ({
                 </div>
                 <div class="flex justify-start self-stretch p-3">
                     <RouterLink :to="`/view?album=${album.id}`">
-                        <Icon class="cursor-pointer" icon="mdi:web" />
+                        <Icon class="cursor-pointer text-gray-300 hover:text-gray-500" icon="mdi:web" />
                     </RouterLink>
                 </div>
             </div>
