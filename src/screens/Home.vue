@@ -6,6 +6,7 @@ import { Icon } from '@iconify/vue';
 import ProjectCard from '../component/project_card.vue'
 import { useRouter } from 'vue-router';
 import IconAlbum from "../../assets/album.png"
+
 const projStore = useProjectStore();
 const router = useRouter()
 function createProject(options = {}) {
@@ -78,7 +79,7 @@ const albums = computed(() => projStore.albums.map(album => ({
                     <input class="text-sm text-gray-500 self-start p-1 mt-[1px]" v-model="album.desc" placeholder="添加专辑描述"
                         @change="saveAlbum(album)" />
                 </div>
-                <div class="flex flex-col justify-start self-stretch p-3">
+                <div class="flex justify-start self-stretch p-3">
                     <RouterLink :to="`/view?album=${album.id}`">
                         <Icon class="cursor-pointer" icon="mdi:web" />
                     </RouterLink>
