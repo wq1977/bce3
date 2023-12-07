@@ -20,7 +20,7 @@ const api = {
       }))
     );
   },
-  init(dbpath) {
+  init() {
     PROJ_BASE = require("path").join(
       require("electron").app.getPath("userData"),
       "projects"
