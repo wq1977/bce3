@@ -51,9 +51,12 @@ async function doPublish() {
                 class="absolute z-0 left-0 top-0 bottom-0 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500">
             </div>
             <div class="z-[1] absolute left-0 top-0 bottom-0 flex items-center justify-end right-0 p-5 ">
+                <span v-if="store.progressType == 'rsync'" class="m-auto "> 正在发布 {{ (store.progress * 100).toFixed(2) }}%
+                    ...
+                </span>
                 <span v-if="store.progressType == 'mp3'" class="m-auto "> 正在导出 {{ (store.progress * 100).toFixed(2) }}% ...
                 </span>
-                <span v-if="store.progressType == 'play'" class="m-auto  "> 正在渲染 {{ (store.progress * 100).toFixed(2) }}%
+                <span v-if="store.progressType == 'play'" class="m-auto  "> 正在并轨 {{ (store.progress * 100).toFixed(2) }}%
                     ...
                 </span>
                 <button @click="doPublish" :disabled="!!store.progressType"

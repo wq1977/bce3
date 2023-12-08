@@ -1,8 +1,9 @@
-const { shell, dialog, BrowserWindow } = require("electron");
-const { createHash } = require("crypto");
 import createLogger from "./log";
 import { shares } from "./shares";
 import { VIEW_PORT } from "../common/common";
+const { shell, dialog, BrowserWindow } = require("electron");
+const { createHash } = require("crypto");
+const { spawn } = require("node:child_process");
 
 let PROJ_BASE;
 const RESOURCE_ROOT = require("path").join(__dirname, "..", "..");
@@ -103,6 +104,39 @@ const api = {
         )
       );
     }
+    if (album.hostname && album.username && album.path) {
+      await api.syncProject(null, album);
+    }
+  },
+  async syncProject(event, album) {
+    const indexPathBase = require("path").join(PROJ_BASE, "www", album.id);
+    const cp = spawn("rsync", [
+      "-avPe",
+      "ssh",
+      `${indexPathBase}/`,
+      `${album.username}@${album.hostname}:${album.path}/`,
+    ]);
+    return new Promise((resolve) => {
+      cp.stdout.on("data", (data) => {
+        const match = `${data}`.match(/([\d]+)%/);
+        if (match) {
+          event.sender.send("rsync-progress", {
+            progress: parseInt(match[1]) / 100,
+          });
+        }
+      });
+      cp.stderr.on("data", (data) => {
+        log.error(`stderr: ${data}`);
+      });
+      cp.on("close", (code) => {
+        if (code != 0) {
+          event.sender.send("rsync-progress", {
+            error: "同步失败",
+          });
+        }
+        resolve();
+      });
+    });
   },
   async save2file(event, projname, path, content) {
     let abspath;
@@ -209,7 +243,6 @@ const api = {
       "__recognition__.wav"
     );
     require("fs").writeFileSync(tmppath, Buffer.from(buffer));
-    const { spawn } = require("node:child_process");
     let appRoot = RESOURCE_ROOT;
     if (RESOURCE_ROOT.endsWith("app.asar")) {
       appRoot += ".unpacked";

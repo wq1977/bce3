@@ -1064,6 +1064,10 @@ export const useProjectStore = defineStore("project", () => {
     progressType.value = p.progress ? "mp3" : "";
     progress.value = p.progress || 0;
   });
+  api.on("rsync-progress", "project-store", function (p) {
+    progressType.value = p.progress ? "rsync" : "";
+    progress.value = p.progress || 0;
+  });
   return {
     albums,
     list,
