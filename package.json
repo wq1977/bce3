@@ -49,6 +49,7 @@
     "electron-squirrel-startup": "^1.0.0",
     "koa": "^2.14.2",
     "koa-static": "^5.0.0",
-    "lamejstmp": "^1.0.1"
+    "lamejstmp": "^1.0.1",
+    "marked": "^11.0.0"
   }
 }

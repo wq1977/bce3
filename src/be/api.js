@@ -1,6 +1,8 @@
-import createLogger from "./log";
-import { shares } from "./shares";
-import { VIEW_PORT } from "../common/common";
+import createLogger from "./log.js";
+import { shares } from "./shares.js";
+import { VIEW_PORT } from "../common/common.js";
+import { marked } from "marked";
+
 const { shell, dialog, BrowserWindow } = require("electron");
 const { createHash } = require("crypto");
 const { spawn } = require("node:child_process");
@@ -87,6 +89,13 @@ const api = {
 
     const { episodes, ...other } = album;
     for (let episode of album.episodes) {
+      episode.bytes = require("fs").existsSync(
+        require("path").join(indexPathBase, `${episode.id}.mp3`)
+      )
+        ? require("fs").statSync(
+            require("path").join(indexPathBase, `${episode.id}.mp3`)
+          ).size
+        : 0;
       const projectPage = require("path").join(
         indexPathBase,
         `${episode.id}.html`
@@ -104,9 +113,77 @@ const api = {
         )
       );
     }
-    if (album.hostname && album.username && album.path) {
-      await api.syncProject(null, album);
+    if (album.hostname) {
+      await api.renderRSS(event, album);
     }
+    if (album.hostname && album.username && album.path) {
+      await api.syncProject(event, album);
+    }
+  },
+  renderRSS(event, album) {
+    const rfc822 = (date) =>
+      require("moment")(date).format("MMM D,YYYY [at] h:mm:ss A");
+    const hhmmss = (secs) => {
+      const hours = Math.floor(secs / 3600);
+      const minutes = Math.floor((secs % 3600) / 60);
+      const seconds = Math.floor(secs % 60);
+      return `${hours > 9 ? `${hour}:` : hours > 0 ? `0${hours}:` : ""}${
+        minutes > 9 ? `${minutes}:` : `0${minutes}:`
+      }${seconds > 9 ? seconds : `0${seconds}`}`;
+    };
+    const root = PROJ_BASE
+      ? require("path").join(PROJ_BASE, "www", album.id)
+      : "";
+    const rssXML = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"
+    xmlns:content="http://purl.org/rss/1.0/modules/content/"
+    xmlns:wfw="http://wellformedweb.org/CommentAPI/"
+    xmlns:dc="http://purl.org/dc/elements/1.1/"
+    xmlns:atom="http://www.w3.org/2005/Atom"
+    xmlns:sy="http://purl.org/rss/1.0/modules/syndication/"
+    xmlns:slash="http://purl.org/rss/1.0/modules/slash/"
+    xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd"
+    >
+<channel>
+    <title> ${album.name} </title>
+    <atom:link href="https://${
+      album.hostname
+    }/podcast.xml" rel="self" type="application/rss+xml" />
+    <link>https://${album.hostname}/</link>
+    <description><![CDATA[
+    ${marked.parse(album.desc || "")}
+    ]]></description>
+    <itunes:image href="https://${album.hostname}/cover.png"/>
+    <language>en</language>
+    <itunes:explicit>no</itunes:explicit>
+    <itunes:category text="Lifestyle" />
+    ${(album.episodes || [])
+      .map(
+        (episode) => `
+    <item>
+        <title> ${episode.title}</title>
+        <link>https://${album.hostname}/${episode.id}.html</link>
+        <guid>https://${album.hostname}/${episode.id}.html</guid>
+        <pubDate>${rfc822(episode.updateat)}</pubDate>
+        <itunes:image href="https://${album.hostname}/${episode.id}.png" />    
+        <enclosure url="https://${album.hostname}/${episode.id}.mp3" length="${
+          episode.bytes
+        }" type="audio/mpeg" />
+        <itunes:duration>${hhmmss(episode.duration || 0)}</itunes:duration>
+        <description><![CDATA[
+            ${marked.parse(episode.desc || "")}
+        ]]></description>
+    </item>
+    `
+      )
+      .join("\n")}
+</channel>
+</rss>`;
+    if (PROJ_BASE) {
+      const rssPath = require("path").join(root, "podcast.xml");
+      require("fs").writeFileSync(rssPath, rssXML);
+    }
+    return rssXML;
   },
   async syncProject(event, album) {
     const indexPathBase = require("path").join(PROJ_BASE, "www", album.id);
@@ -294,3 +371,6 @@ const api = {
 };
 
 export default api;
+
+if (require.main === module) {
+}

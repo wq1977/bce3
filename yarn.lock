@@ -2829,6 +2829,11 @@ map-age-cleaner@^0.1.1:
   dependencies:
     p-defer "^1.0.0"
 
+marked@^11.0.0:
+  version "11.0.0"
+  resolved "https://registry.yarnpkg.com/marked/-/marked-11.0.0.tgz#02e63c4352a59a268e2e5b3afb7a46851c0b446d"
+  integrity sha512-2GsW34uXaFEGTQ/+3rCnNC6vUYTAgFuDLGl70v/aWinA5mIJtTrrFAmfbLOfVvgPyxXuDVL9He/7reCK+6j3Sw==
+
 matcher@^3.0.0:
   version "3.0.0"
   resolved "https://registry.yarnpkg.com/matcher/-/matcher-3.0.0.tgz#bd9060f4c5b70aa8041ccc6f80368760994f30ca"
