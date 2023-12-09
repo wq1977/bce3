@@ -87,11 +87,11 @@ const api = {
       indexTemplate.replace("__PRE_DATA__", JSON.stringify(album))
     );
 
-    let albumCoverSrcPath = require("path").join(PROJ_BASE, `${album.id}.png`);
+    let albumCoverSrcPath = require("path").join(PROJ_BASE, `${album.id}.jpg`);
     if (!require("fs").existsSync(albumCoverSrcPath)) {
-      albumCoverSrcPath = require("path").join(assetsPath, "album.png");
+      albumCoverSrcPath = require("path").join(assetsPath, "album.jpg");
     }
-    const albumCoverDstPath = require("path").join(indexPathBase, "cover.png");
+    const albumCoverDstPath = require("path").join(indexPathBase, "cover.jpg");
     require("fs").cpSync(albumCoverSrcPath, albumCoverDstPath);
 
     const { episodes, ...other } = album;
@@ -117,7 +117,7 @@ const api = {
       }
       const projectCoverDst = require("path").join(
         indexPathBase,
-        `${episode.id}.png`
+        `${episode.id}.jpg`
       );
       require("fs").cpSync(projectCoverSrc, projectCoverDst);
 

@@ -1031,7 +1031,9 @@ export const useProjectStore = defineStore("project", () => {
     const albumid = project.album;
     const album = albums.value.filter((a) => a.id == albumid)[0];
     if (!album) return;
-    const projects = list.value.filter((p) => p.album == albumid);
+    const projects = list.value.filter(
+      (p) => p.album == albumid && !p.unpublish
+    );
     await api.call(
       "publish",
       JSON.parse(
@@ -1047,8 +1049,7 @@ export const useProjectStore = defineStore("project", () => {
           })),
         })
       ),
-      project.id,
-      domp3
+      project.id
     );
   }
 
@@ -1062,22 +1063,22 @@ export const useProjectStore = defineStore("project", () => {
 
   async function setProjectCover(project) {
     const pathes = await api.call("openDialog", {
-      filters: [{ name: "Images", extensions: ["png"] }],
+      filters: [{ name: "Images", extensions: ["jpg"] }],
     });
     if (pathes && pathes.length) {
       const cover = await api.call("readfile", pathes[0]);
-      await api.call("save2file", project.id, `cover.png`, cover);
+      await api.call("save2file", project.id, `cover.jpg`, cover);
       project.coverUrl = URL.createObjectURL(new Blob([cover]));
     }
   }
 
   async function setupAlbumCover(album) {
     const pathes = await api.call("openDialog", {
-      filters: [{ name: "Images", extensions: ["png"] }],
+      filters: [{ name: "Images", extensions: ["jpg"] }],
     });
     if (pathes && pathes.length) {
       const cover = await api.call("readfile", pathes[0]);
-      await api.call("save2file", `${album.id}.png`, cover);
+      await api.call("save2file", `${album.id}.jpg`, cover);
       albums.value.filter((a) => a.id == album.id)[0].coverUrl =
         URL.createObjectURL(new Blob([cover]));
     }
@@ -1086,7 +1087,7 @@ export const useProjectStore = defineStore("project", () => {
   async function loadAlbumCover(album) {
     if (album.coverUrl) return album.coverUrl;
     try {
-      const cover = await api.call("readfile", `${album.id}.png`);
+      const cover = await api.call("readfile", `${album.id}.jpg`);
       if (cover) {
         album.coverUrl = URL.createObjectURL(new Blob([cover]));
         return album.coverUrl;
