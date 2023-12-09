@@ -3,6 +3,7 @@ import { defineStore } from "pinia";
 import moment from "moment";
 import toWav from "audiobuffer-to-wav";
 import { VIEW_PORT } from "../common/common";
+import DefaultCover from "../../assets/album.png";
 
 const PARAGRAPH_DEFAULT_DELAY = 3;
 const S2T_SAMPLE_RATE = 44100;
@@ -107,13 +108,7 @@ export const useProjectStore = defineStore("project", () => {
       const str = enc.decode(album);
       albums.value = JSON.parse(str);
       for (let album of albums.value) {
-        try {
-          const cover = await api.call("readfile", `${album.id}.png`);
-          if (cover) {
-            console.log(cover);
-            album.coverUrl = URL.createObjectURL(new Blob([cover]));
-          }
-        } catch (err) {}
+        album.coverUrl = await loadAlbumCover(album);
       }
     }
 
@@ -1064,6 +1059,17 @@ export const useProjectStore = defineStore("project", () => {
     }
   }
 
+  async function setProjectCover(project) {
+    const pathes = await api.call("openDialog", {
+      filters: [{ name: "Images", extensions: ["png"] }],
+    });
+    if (pathes && pathes.length) {
+      const cover = await api.call("readfile", pathes[0]);
+      await api.call("save2file", project.id, `cover.png`, cover);
+      project.coverUrl = URL.createObjectURL(new Blob([cover]));
+    }
+  }
+
   async function setupAlbumCover(album) {
     const pathes = await api.call("openDialog", {
       filters: [{ name: "Images", extensions: ["png"] }],
@@ -1074,6 +1080,32 @@ export const useProjectStore = defineStore("project", () => {
       albums.value.filter((a) => a.id == album.id)[0].coverUrl =
         URL.createObjectURL(new Blob([cover]));
     }
+  }
+
+  async function loadAlbumCover(album) {
+    if (album.coverUrl) return album.coverUrl;
+    try {
+      const cover = await api.call("readfile", `${album.id}.png`);
+      if (cover) {
+        album.coverUrl = URL.createObjectURL(new Blob([cover]));
+        return album.coverUrl;
+      }
+    } catch (err) {}
+    return DefaultCover;
+  }
+
+  async function loadProjectCover(project) {
+    try {
+      const cover = await api.call("readfile", project.id, "cover.png");
+      if (cover) {
+        project.coverUrl = URL.createObjectURL(new Blob([cover]));
+      } else {
+        const album = albums.value.filter((a) => a.id == project.album)[0];
+        if (album) {
+          project.coverUrl = await loadAlbumCover(album);
+        }
+      }
+    } catch (err) {}
   }
 
   load();
@@ -1132,6 +1164,8 @@ export const useProjectStore = defineStore("project", () => {
     doPublish,
     getViewUrl,
     setupAlbumCover,
+    loadProjectCover,
+    setProjectCover,
   };
 });
 

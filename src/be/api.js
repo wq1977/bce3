@@ -256,7 +256,6 @@ const api = {
     if (!require("fs").existsSync(dirname)) {
       require("fs").mkdirSync(dirname, { recursive: true });
     }
-    console.log(content, content.constructor.name);
 
     if (
       content.constructor.name == "ArrayBuffer" ||
