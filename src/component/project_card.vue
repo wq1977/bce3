@@ -3,11 +3,13 @@ import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import moment from 'moment'
 import { Icon } from '@iconify/vue';
+import { useProjectStore } from '../stores/project';
 
 const props = defineProps(['project'])
 const router = useRouter()
 const deleteConfirm = ref(false)
 let toDelete = null
+const store = useProjectStore()
 
 function doDelete(proj) {
     deleteConfirm.value = true
@@ -21,22 +23,30 @@ function fmtDate(ts) {
 }
 
 async function handleAction() {
-    await projStore.deleteProject(toDelete)
+    await store.deleteProject(toDelete)
 }
 
 </script>
 <template>
     <div @click="router.push(`/editor/paragraph?id=${project.id}`)"
-        class="group relative border cursor-pointer rounded m-2 p-2 flex flex-col w-[200px] h-[100px]">
-        <span :title="`${eTitle} ${project.name || project.id}`"
-            class="mr-5 bg-transparent  text-xl font-black text-ellipsis overflow-hidden truncate">
+        class="group relative border cursor-pointer rounded m-2 p-2 flex flex-col w-[200px]">
+        <span :title="`${eTitle} ${project.name || project.id}`" :data-publish="!project.unpublish"
+            class="mr-5 bg-transparent data-[publish=false]:text-gray-500 text-xl font-black text-ellipsis overflow-hidden truncate">
             <span class="font-normal text-xs text-gray-500 mr-2">{{ eTitle }}</span>
             <span>{{ project.name || project.id }}</span>
         </span>
-        <span class="text-xs mt-1 text-gray-600">ID: {{ project.id }}</span>
-        <span class="text-xs text-right mt-5 text-gray-500">{{ fmtDate(project.modified) }}</span>
-        <Icon @click.stop="doDelete(project)" icon="fluent:delete-12-regular"
-            class="group-hover:inline hidden absolute right-1 top-1 text-gray-300 hover:text-gray-500" />
+        <span class="text-xs my-2 text-gray-500 flex-1 line-clamp-2">{{ project.desc }}</span>
+        <div class="flex items-center">
+            <span class="text-xs text-gray-500/50 flex-1">{{ fmtDate(project.updateat) }}</span>
+            <Icon v-if="project.unpublish"
+                @click.stop="project.unpublish = false; store.saveProject(project); store.doPublish(project)" title="下架"
+                icon="fa-solid:arrow-up" class="group-hover:inline hidden mr-1 text-gray-500 hover:text-gray-800" />
+            <Icon v-else @click.stop="project.unpublish = true; store.saveProject(project); store.doPublish(project)"
+                title="下架" icon="fa-solid:arrow-down"
+                class="group-hover:inline hidden mr-1 text-gray-500 hover:text-gray-800" />
+            <Icon @click.stop="doDelete(project)" title="删除" icon="fluent:delete-12-regular"
+                class="group-hover:inline hidden mr-1 text-gray-500 hover:text-gray-800" />
+        </div>
         <AlertDialogRoot v-model:open="deleteConfirm">
             <AlertDialogPortal>
                 <AlertDialogOverlay class="bg-black-gray-900 data-[state=open]:animate-overlayShow fixed inset-0 z-30" />

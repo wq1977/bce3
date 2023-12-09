@@ -211,6 +211,7 @@ const api = {
     const cp = spawn("rsync", [
       "-avPe",
       "ssh",
+      "--delete",
       `${indexPathBase}/`,
       `${album.username}@${album.hostname}:${album.path}/`,
     ]);

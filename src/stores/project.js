@@ -347,7 +347,7 @@ export const useProjectStore = defineStore("project", () => {
         for (let i = 0; i < buffer.numberOfChannels; i++) {
           channels.push(FloatArray2Int16(buffer.getChannelData(i)));
         }
-        // await api.call("save2mp3", project.id, "final.mp3", channels);
+        await api.call("save2mp3", project.id, "final.mp3", channels);
         return buffer.duration;
       }
     } catch (err) {
@@ -1047,7 +1047,8 @@ export const useProjectStore = defineStore("project", () => {
           })),
         })
       ),
-      project.id
+      project.id,
+      domp3
     );
   }
 

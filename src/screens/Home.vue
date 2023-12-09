@@ -76,7 +76,7 @@ const albums = computed(() => projStore.albums.map(album => ({
             </template>
             <template #footer>
                 <div @click="createProject({ cfg: {} })"
-                    class="text-white/70 hover:text-gray-500 group relative border cursor-pointer rounded m-2 p-2 flex items-center justify-center w-[200px]  h-[100px]">
+                    class="text-white/70 hover:text-gray-500 group relative border cursor-pointer rounded m-2 p-2 flex items-center justify-center w-[200px] min-h-[100px]">
                     <Icon class="text-[40px]" icon="typcn:plus"></Icon>
                 </div>
                 <div v-for="i in [1, 2, 3, 4, 5]" class=" w-[200px] m-2 h-[0]">
@@ -94,7 +94,7 @@ const albums = computed(() => projStore.albums.map(album => ({
                         @change="saveAlbum(album)" />
                 </div>
                 <div class="flex justify-start self-stretch p-3">
-                    <Icon @click="setupAlbum(album)" class="cursor-pointer mr-[5px] text-gray-300 hover:text-gray-500"
+                    <Icon @click="setupAlbum(album)" class="cursor-pointer mr-2 text-gray-300 hover:text-gray-500"
                         icon="file-icons:config" />
                     <RouterLink :to="`/view?album=${album.id}`">
                         <Icon class="cursor-pointer text-gray-300 hover:text-gray-500" icon="mdi:web" />
@@ -102,13 +102,13 @@ const albums = computed(() => projStore.albums.map(album => ({
                 </div>
             </div>
             <Draggable group="card" v-model="album.list.value" item-key="id"
-                class="flex flex-wrap items-center mt-2 justify-center bg-gradient-to-r from-teal-300 to-blue-500 p-8">
+                class="flex flex-wrap items-center mt-2 items-stretch justify-center bg-gradient-to-r from-teal-300 to-blue-500 p-8">
                 <template #item="{ element: proj, index }">
                     <ProjectCard :project="proj" />
                 </template>
                 <template #footer>
                     <div @click="createProject({ album: album.id, cfg: {} })"
-                        class="text-white/70 hover:text-gray-500 group relative border cursor-pointer rounded m-2 p-2 flex items-center justify-center w-[200px]  h-[100px]">
+                        class="text-white/70 hover:text-gray-500 group relative border cursor-pointer rounded m-2 p-2 flex items-center justify-center w-[200px] min-h-[100px]">
                         <Icon class="text-[40px]" icon="typcn:plus"></Icon>
                     </div>
                     <div v-for="i in [1, 2, 3, 4, 5]" class="w-[200px] m-2 h-[0]">
