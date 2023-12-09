@@ -106,6 +106,15 @@ export const useProjectStore = defineStore("project", () => {
       const enc = new TextDecoder("utf-8");
       const str = enc.decode(album);
       albums.value = JSON.parse(str);
+      for (let album of albums.value) {
+        try {
+          const cover = await api.call("readfile", `${album.id}.png`);
+          if (cover) {
+            console.log(cover);
+            album.coverUrl = URL.createObjectURL(new Blob([cover]));
+          }
+        } catch (err) {}
+      }
     }
 
     list.value = (await api.call("listProjects")) || [];
@@ -1055,6 +1064,18 @@ export const useProjectStore = defineStore("project", () => {
     }
   }
 
+  async function setupAlbumCover(album) {
+    const pathes = await api.call("openDialog", {
+      filters: [{ name: "Images", extensions: ["png"] }],
+    });
+    if (pathes && pathes.length) {
+      const cover = await api.call("readfile", pathes[0]);
+      await api.call("save2file", `${album.id}.png`, cover);
+      albums.value.filter((a) => a.id == album.id)[0].coverUrl =
+        URL.createObjectURL(new Blob([cover]));
+    }
+  }
+
   load();
   api.on("recognition-progress", "project-store", function (p) {
     progressType.value = p.end ? "recognition" : "";
@@ -1110,6 +1131,7 @@ export const useProjectStore = defineStore("project", () => {
     newAlbum,
     doPublish,
     getViewUrl,
+    setupAlbumCover,
   };
 });
 

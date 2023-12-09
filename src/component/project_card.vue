@@ -30,7 +30,7 @@ async function handleAction() {
         class="group relative border cursor-pointer rounded m-2 p-2 flex flex-col w-[200px] h-[100px]">
         <span :title="`${eTitle} ${project.name || project.id}`"
             class="mr-5 bg-transparent  text-xl font-black text-ellipsis overflow-hidden truncate">
-            <span class="relative -top-1 font-normal text-sm text-gray-500 mr-2">{{ eTitle }}</span>
+            <span class="font-normal text-xs text-gray-500 mr-2">{{ eTitle }}</span>
             <span>{{ project.name || project.id }}</span>
         </span>
         <span class="text-xs mt-1 text-gray-600">ID: {{ project.id }}</span>

@@ -83,9 +83,10 @@ const albums = computed(() => projStore.albums.map(album => ({
                 </div>
             </template>
         </Draggable>
-        <div v-for="album in albums" class="flex flex-col mt-4">
-            <div class="flex items-center">
-                <img :src="IconAlbum" class="w-[80px]" />
+        <div v-for="album in albums" :key="album.id" class="flex flex-col mt-4">
+            <div class="flex items-start">
+                <img @click="projStore.setupAlbumCover(album)" :src="album.coverUrl || IconAlbum"
+                    class="w-[80px] cursor-pointer rounded mr-2" />
                 <div class="flex flex-1 flex-col">
                     <input class="font-bold text-lg self-start p-1" v-model="album.name" placeholder="未命名专辑"
                         @change="saveAlbum(album)" />

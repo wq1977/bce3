@@ -256,7 +256,12 @@ const api = {
     if (!require("fs").existsSync(dirname)) {
       require("fs").mkdirSync(dirname, { recursive: true });
     }
-    if (content.constructor.name == "ArrayBuffer") {
+    console.log(content, content.constructor.name);
+
+    if (
+      content.constructor.name == "ArrayBuffer" ||
+      content.constructor.name == "Uint8Array"
+    ) {
       content = Buffer.from(content);
       require("fs").writeFileSync(abspath, content);
     } else if (content[0] && content[0].constructor.name == "ArrayBuffer") {
@@ -327,6 +332,12 @@ const api = {
       path: require("path").join("tracks", hash),
       buffer: require("fs").readFileSync(trackPath),
     };
+  },
+  async openDialog(event, options) {
+    return dialog.showOpenDialogSync(
+      BrowserWindow.fromWebContents(event.sender),
+      options
+    );
   },
   async saveDialog(event, options) {
     return dialog.showSaveDialogSync(
