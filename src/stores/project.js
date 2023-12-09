@@ -102,6 +102,10 @@ export const useProjectStore = defineStore("project", () => {
     albums.value = [{ id, name: "", desc: "" }, ...albums.value];
   }
   async function load() {
+    list.value = (await api.call("listProjects")) || [];
+    for (let proj of list.value) {
+      prepare(proj);
+    }
     const album = await api.call("readfile", "album.json");
     if (album) {
       const enc = new TextDecoder("utf-8");
@@ -109,12 +113,8 @@ export const useProjectStore = defineStore("project", () => {
       albums.value = JSON.parse(str);
       for (let album of albums.value) {
         album.coverUrl = await loadAlbumCover(album);
+        updateAlbumIndex(album.id);
       }
-    }
-
-    list.value = (await api.call("listProjects")) || [];
-    for (let proj of list.value) {
-      prepare(proj);
     }
   }
   async function refreshShareList(project) {
@@ -1027,12 +1027,9 @@ export const useProjectStore = defineStore("project", () => {
       delete buffers[key];
     }
   }
-  async function doPublish(project) {
-    const albumid = project.album;
-    const album = albums.value.filter((a) => a.id == albumid)[0];
-    if (!album) return;
+  async function doPublishAlbum(album, project) {
     const projects = list.value.filter(
-      (p) => p.album == albumid && !p.unpublish
+      (p) => p.album == album.id && !p.unpublish
     );
     await api.call(
       "publish",
@@ -1041,7 +1038,8 @@ export const useProjectStore = defineStore("project", () => {
           ...album,
           episodes: projects.map((p) => ({
             id: p.id,
-            album_index: p.albumIndex,
+            epid: p.epid,
+            album_index: p.albumIndex + 1,
             updateat: p.updateat,
             title: p.name,
             desc: p.desc,
@@ -1049,8 +1047,14 @@ export const useProjectStore = defineStore("project", () => {
           })),
         })
       ),
-      project.id
+      project && project.id
     );
+  }
+  async function doPublish(project) {
+    const albumid = project.album;
+    const album = albums.value.filter((a) => a.id == albumid)[0];
+    if (!album) return;
+    await doPublishAlbum(album, project);
   }
 
   function getViewUrl(album, project) {
@@ -1108,6 +1112,28 @@ export const useProjectStore = defineStore("project", () => {
         }
       }
     } catch (err) {}
+  }
+
+  function updateAlbumIndex(albumid) {
+    const eps = list.value
+      .filter((p) => p.tracks.length && p.album == albumid)
+      .sort((a, b) => (a.albumIndex || 0) - (b.albumIndex || 0));
+    let epidBaseIdx = 0;
+    let epidBase = 0;
+    for (let i = 0; i < eps.length; i++) {
+      if (eps[i].epid) {
+        epidBaseIdx = i;
+        epidBase = eps[i].epid;
+      } else {
+        eps[i].albumIndex = i - epidBaseIdx + epidBase - 1;
+      }
+    }
+  }
+
+  async function setProjectEpid(project, epid) {
+    project.epid = epid;
+    updateAlbumIndex(project.album);
+    await saveProject(project);
   }
 
   load();
@@ -1168,6 +1194,9 @@ export const useProjectStore = defineStore("project", () => {
     setupAlbumCover,
     loadProjectCover,
     setProjectCover,
+    setProjectEpid,
+    updateAlbumIndex,
+    doPublishAlbum,
   };
 });
 

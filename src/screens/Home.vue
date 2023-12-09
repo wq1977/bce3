@@ -59,9 +59,18 @@ const albums = computed(() => projStore.albums.map(album => ({
                 proj.albumIndex = idx
                 projStore.saveProject(proj)
             })
+            projStore.updateAlbumIndex(album)
         }
     })
 })))
+
+const syncing = ref(false)
+async function dosync(album) {
+    syncing.value = album.id
+    const { list, ...other } = album
+    await projStore.doPublishAlbum(other)
+    syncing.value = false
+}
 
 </script>
 <template>
@@ -93,7 +102,12 @@ const albums = computed(() => projStore.albums.map(album => ({
                     <input class="text-sm text-gray-500 self-start p-1 mt-[1px]" v-model="album.desc" placeholder="添加专辑描述"
                         @change="saveAlbum(album)" />
                 </div>
-                <div class="flex justify-start self-stretch p-3">
+                <div class="flex justify-start self-stretch p-3 relative overflow-hidden">
+                    <div v-if="syncing == album.id"
+                        class="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 via-red-500 to-green-500 animate-flow">
+                    </div>
+                    <Icon @click="dosync(album)" class="cursor-pointer mr-2 text-gray-300 hover:text-gray-500"
+                        icon="ic:twotone-cloud-sync" />
                     <Icon @click="setupAlbum(album)" class="cursor-pointer mr-2 text-gray-300 hover:text-gray-500"
                         icon="file-icons:config" />
                     <RouterLink :to="`/view?album=${album.id}`">

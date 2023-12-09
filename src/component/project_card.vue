@@ -16,7 +16,10 @@ function doDelete(proj) {
     toDelete = proj
 }
 
-const eTitle = computed(() => `E${props.project.albumIndex ? props.project.albumIndex >= 10 ? props.project.albumIndex + 1 : `0${props.project.albumIndex + 1}` : '01'}`)
+const eTitle = computed(() => {
+    const value = props.project.epid || (props.project.albumIndex + 1)
+    return `E${value >= 10 ? value : `0${value}`}`
+})
 
 function fmtDate(ts) {
     return moment(ts).format('YYYY-MM-DD')
@@ -25,6 +28,8 @@ function fmtDate(ts) {
 async function handleAction() {
     await store.deleteProject(toDelete)
 }
+
+const epid = ref(props.project.epid || (props.project.albumIndex + 1))
 
 const syncing = ref(false)
 async function setProjectUnpublished(status) {
@@ -51,6 +56,42 @@ async function setProjectUnpublished(status) {
         <span class="text-xs my-2 text-gray-500 flex-1 line-clamp-2">{{ project.desc }}</span>
         <div class="flex items-center">
             <span class="text-xs text-gray-500/50 flex-1">{{ fmtDate(project.updateat) }}</span>
+            <DialogRoot>
+                <DialogTrigger :asChild="true">
+                    <Icon @click.stop="() => { }" title="设置编号" icon="tabler:number"
+                        class="group-hover:inline hidden mr-1 text-gray-500 hover:text-gray-800" />
+                </DialogTrigger>
+                <DialogPortal>
+                    <DialogOverlay class="bg-blackA9 data-[state=open]:animate-overlayShow fixed inset-0 z-30" />
+                    <DialogContent
+                        class="data-[state=open]:animate-contentShow fixed top-[50%] left-[50%] max-h-[85vh] w-[90vw] max-w-[450px] translate-x-[-50%] translate-y-[-50%] rounded-[6px] bg-white p-[25px] shadow-[hsl(206_22%_7%_/_35%)_0px_10px_38px_-10px,_hsl(206_22%_7%_/_20%)_0px_10px_20px_-15px] focus:outline-none z-[100]">
+                        <DialogTitle class="text-mauve12 m-0 text-[17px] font-semibold">
+                            设置单集编号
+                        </DialogTitle>
+                        <DialogDescription class="text-mauve11 mt-[10px] mb-5 text-[15px] leading-normal">
+                            如果没有单独设置，后续单集的编号也会收到影响.
+                        </DialogDescription>
+                        <fieldset class="mb-[15px] flex items-center gap-5">
+                            <label class="text-grass11 w-[90px] text-right text-[15px]" for="name"> 编号： </label>
+                            <input id="name" v-model="epid"
+                                class="text-grass11 shadow-green7 focus:shadow-green8 inline-flex h-[35px] w-full flex-1 items-center justify-center rounded-[4px] px-[10px] text-[15px] leading-none shadow-[0_0_0_1px] outline-none focus:shadow-[0_0_0_2px]">
+                        </fieldset>
+                        <div class="mt-[25px] flex justify-end">
+                            <DialogClose as-child>
+                                <button @click="store.setProjectEpid(project, parseInt(epid))"
+                                    class="bg-green4 text-green11 hover:bg-green5 focus:shadow-green7 inline-flex h-[35px] items-center justify-center rounded-[4px] px-[15px] font-semibold leading-none focus:shadow-[0_0_0_2px] focus:outline-none">
+                                    保存
+                                </button>
+                            </DialogClose>
+                        </div>
+                        <DialogClose
+                            class="text-grass11 hover:bg-green4 focus:shadow-green7 absolute top-[10px] right-[10px] inline-flex h-[25px] w-[25px] appearance-none items-center justify-center rounded-full focus:shadow-[0_0_0_2px] focus:outline-none"
+                            aria-label="Close">
+                            <Icon icon="lucide:x" />
+                        </DialogClose>
+                    </DialogContent>
+                </DialogPortal>
+            </DialogRoot>
             <Icon v-if="project.unpublish" @click.stop="setProjectUnpublished(false)" title="下架" icon="fa-solid:arrow-up"
                 class="group-hover:inline hidden mr-1 text-gray-500 hover:text-gray-800" />
             <Icon v-else @click.stop="setProjectUnpublished(true)" title="下架" icon="fa-solid:arrow-down"
