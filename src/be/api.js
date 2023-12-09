@@ -87,6 +87,13 @@ const api = {
       indexTemplate.replace("__PRE_DATA__", JSON.stringify(album))
     );
 
+    let albumCoverSrcPath = require("path").join(PROJ_BASE, `${album.id}.png`);
+    if (!require("fs").existsSync(albumCoverSrcPath)) {
+      albumCoverSrcPath = require("path").join(assetsPath, "album.png");
+    }
+    const albumCoverDstPath = require("path").join(indexPathBase, "cover.png");
+    require("fs").cpSync(albumCoverSrcPath, albumCoverDstPath);
+
     const { episodes, ...other } = album;
     for (let episode of album.episodes) {
       episode.bytes = require("fs").existsSync(
@@ -100,6 +107,20 @@ const api = {
         indexPathBase,
         `${episode.id}.html`
       );
+      let projectCoverSrc = require("path").join(
+        PROJ_BASE,
+        episode.id,
+        "cover.png"
+      );
+      if (!require("fs").existsSync(projectCoverSrc)) {
+        projectCoverSrc = albumCoverSrcPath;
+      }
+      const projectCoverDst = require("path").join(
+        indexPathBase,
+        `${episode.id}.png`
+      );
+      require("fs").cpSync(projectCoverSrc, projectCoverDst);
+
       require("fs").writeFileSync(
         projectPage,
         indexTemplate.replace(
