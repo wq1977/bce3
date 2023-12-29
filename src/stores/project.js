@@ -890,14 +890,14 @@ export const useProjectStore = defineStore("project", () => {
     const decodeContext = new AudioContext();
     const audioBuffers = await Promise.all(
       [...files].map(async (file) => {
-        loading.value = true;
+        progressType.value = "load";
         const { path, buffer } = await api.call(
           "loadTrack",
           project.id,
           file.path
         );
         const audioBuffer = await decodeContext.decodeAudioData(buffer.buffer);
-        loading.value = false;
+        progressType.value = "";
         return {
           name: file.name,
           path,
