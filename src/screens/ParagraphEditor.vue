@@ -117,14 +117,18 @@ function playSelection() {
     store.playWords(project.value, selWordStart.value, selWordEnd.value)
 }
 
+function playFromHere() {
+    store.playWords(project.value, selWordStart.value, project.value.words.length)
+}
+
 function setSelectionTag(tag) {
-    if (selWordStart.value && selWordEnd.value) {
+    if (selWordStart.value != null && selWordEnd.value != null) {
         store.setTag(project.value, selParagraph.value, selWordStart.value, selWordEnd.value, tag)
     }
 }
 
 function setSelectionHot(value) {
-    if (selWordStart.value && selWordEnd.value) {
+    if (selWordStart.value != null && selWordEnd.value != null) {
         store.setHot(project.value, selParagraph.value, selWordStart.value, selWordEnd.value, value)
     }
 }
@@ -206,8 +210,13 @@ function pieceMouseup() {
             </ContextMenuTrigger>
             <ContextMenuPortal>
                 <ContextMenuContent
-                    class=" min-w-[100px] z-30 bg-white outline-none rounded-md p-[5px] shadow-[0px_10px_38px_-10px_rgba(22,_23,_24,_0.35),_0px_10px_20px_-15px_rgba(22,_23,_24,_0.2)] will-change-[opacity,transform] data-[side=top]:animate-slideDownAndFade data-[side=right]:animate-slideLeftAndFade data-[side=bottom]:animate-slideUpAndFade data-[side=left]:animate-slideRightAndFade"
+                    class=" min-w-[150px] z-30 bg-white outline-none rounded-md p-[5px] shadow-[0px_10px_38px_-10px_rgba(22,_23,_24,_0.35),_0px_10px_20px_-15px_rgba(22,_23,_24,_0.2)] will-change-[opacity,transform] data-[side=top]:animate-slideDownAndFade data-[side=right]:animate-slideLeftAndFade data-[side=bottom]:animate-slideUpAndFade data-[side=left]:animate-slideRightAndFade"
                     :side-offset="5">
+                    <ContextMenuItem
+                        class="group text-[13px] leading-none  rounded-[3px] flex items-center h-[25px] px-[5px] relative pl-[18px] select-none outline-none  data-[disabled]:pointer-events-none data-[highlighted]:bg-green-600 data-[highlighted]:text-green-400"
+                        @click="playFromHere()">
+                        <Icon icon="octicon:play-16" class="mr-2 w-[1em]" /> 从此处播放
+                    </ContextMenuItem>
                     <ContextMenuItem
                         class="group text-[13px] leading-none  rounded-[3px] flex items-center h-[25px] px-[5px] relative pl-[18px] select-none outline-none  data-[disabled]:pointer-events-none data-[highlighted]:bg-green-600 data-[highlighted]:text-green-400"
                         @click="playSelection()">
