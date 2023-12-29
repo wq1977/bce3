@@ -153,6 +153,25 @@ export const useProjectStore = defineStore("project", () => {
     );
   }
 
+  function fixLongWord(words, limit) {
+    if (words[words.length - 1].end > limit) {
+      words[words.length - 1].end = limit;
+    }
+    const result = [];
+    for (let word of words) {
+      while (word.end - word.start > GENURATE_SAMPLE_RATE * 5) {
+        result.push({
+          start: word.start,
+          end: word.start + GENURATE_SAMPLE_RATE * 5,
+          word: "⟷",
+        });
+        word.start += GENURATE_SAMPLE_RATE * 5;
+      }
+      result.push(word);
+    }
+    return result;
+  }
+
   // 加载Track,Words等
   async function prepare(project) {
     project.words = [];
@@ -1197,6 +1216,7 @@ export const useProjectStore = defineStore("project", () => {
     setProjectEpid,
     updateAlbumIndex,
     doPublishAlbum,
+    fixLongWord,
   };
 });
 
@@ -1207,6 +1227,12 @@ if (import.meta.vitest) {
     setActivePinia(createPinia());
     global.api = { call: () => {}, on: () => {} };
     const store = useProjectStore();
+    it("fox long word", () => {
+      const words = store.fixLongWord([
+        { start: 1, end: 44100 * 6, word: "a" },
+      ]);
+      expect(words.length).toBe(2);
+    });
     it("getTrackSource", () => {
       expect(
         getTrackSource({ origin: [{ buffer: { duration: 100 } }] }, 0, 0, 100)

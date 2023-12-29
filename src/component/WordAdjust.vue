@@ -130,7 +130,7 @@ async function drawFrame() {
 onMounted(() => {
     drawFrame()
     const { ctx } = getCurrentInstance()
-    ctx.$forceUpdate()
+    ctx.proxy.$forceUpdate()
 })
 
 </script>

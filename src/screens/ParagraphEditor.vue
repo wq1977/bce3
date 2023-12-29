@@ -46,6 +46,9 @@ const titlelist = computed({
 async function init() {
     project.value = store.list.filter(p => p.id == route.query.id)[0]
     await store.prepare(project.value)
+    // await store.loadTracks(project.value)
+    // project.value.words = store.fixLongWord(project.value.words, store.projectTrackLen(project.value))
+    // await store.saveWords(project.value)
 }
 
 async function setComment(event, paragraphIdx) {
@@ -200,7 +203,7 @@ function pieceMouseup() {
                             <span v-for="(piece, pidx) in paragraph.pieces" :data-paragraph="idx" :data-piece="pidx"
                                 :data-tag="piece.type || 'normal'" @mouseup="pieceMouseup" :data-ishot="piece.ishot"
                                 @keydown="paragraphKeyDown($event, idx, piece)" tabindex="0"
-                                class="leading-loose focus:outline-none decoration-4 decoration-dashed data-[tag=mute]:underline data-[tag=beep]:line-through data-[ishot=true]:bg-orange-200 data-[tag=beep]:decoration-wavy data-[tag=beep]:text-blue-600 data-[tag=delete]:line-through data-[tag=delete]:text-red-600 antialiased">
+                                class="leading-loose break-all focus:outline-none decoration-4 decoration-dashed data-[tag=mute]:underline data-[tag=beep]:line-through data-[ishot=true]:bg-orange-200 data-[tag=beep]:decoration-wavy data-[tag=beep]:text-blue-600 data-[tag=delete]:line-through data-[tag=delete]:text-red-600 antialiased">
                                 {{
                                     piece.text }} </span>
                         </div>
