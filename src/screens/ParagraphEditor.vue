@@ -121,7 +121,16 @@ function playSelection() {
 }
 
 function playFromHere() {
-    store.playWords(project.value, selWordStart.value, project.value.words.length)
+    if (selWordStart.value != null) {
+        store.playWords(project.value, selWordStart.value, project.value.words.length)
+    }
+}
+
+function onTxtDbclick() {
+    console.log('db click called')
+    setTimeout(() => {
+        playFromHere()
+    }, 300);
 }
 
 function setSelectionTag(tag) {
@@ -201,8 +210,8 @@ function pieceMouseup() {
                                 class="inline mr-2" />
                             <span>&nbsp;&nbsp;</span>
                             <span v-for="(piece, pidx) in paragraph.pieces" :data-paragraph="idx" :data-piece="pidx"
-                                :data-tag="piece.type || 'normal'" @mouseup="pieceMouseup" :data-ishot="piece.ishot"
-                                @keydown="paragraphKeyDown($event, idx, piece)" tabindex="0"
+                                :data-tag="piece.type || 'normal'" @dblclick="onTxtDbclick" @mouseup="pieceMouseup"
+                                :data-ishot="piece.ishot" @keydown="paragraphKeyDown($event, idx, piece)" tabindex="0"
                                 class="leading-loose break-all focus:outline-none decoration-4 decoration-dashed data-[tag=mute]:underline data-[tag=beep]:line-through data-[ishot=true]:bg-orange-200 data-[tag=beep]:decoration-wavy data-[tag=beep]:text-blue-600 data-[tag=delete]:line-through data-[tag=delete]:text-red-600 antialiased">
                                 {{
                                     piece.text }} </span>

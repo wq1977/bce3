@@ -91,7 +91,7 @@ const api = {
 
     let albumCoverSrcPath = require("path").join(PROJ_BASE, `${album.id}.jpg`);
     if (!require("fs").existsSync(albumCoverSrcPath)) {
-      albumCoverSrcPath = require("path").join(assetsPath, "album.jpg");
+      albumCoverSrcPath = require("path").join(assetsPath, "album.png");
     }
     const albumCoverDstPath = require("path").join(indexPathBase, "cover.jpg");
     require("fs").cpSync(albumCoverSrcPath, albumCoverDstPath);
