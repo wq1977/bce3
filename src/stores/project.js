@@ -123,12 +123,11 @@ export const useProjectStore = defineStore("project", () => {
       [];
   }
   async function saveAlbums() {
-    const { coverUrl, ...others } = albums.value;
-    await api.call(
-      "save2file",
-      "album.json",
-      JSON.parse(JSON.stringify(others))
-    );
+    const json = albums.value.map((album) => {
+      const { coverUrl, ...others } = album;
+      return others;
+    });
+    await api.call("save2file", "album.json", JSON.parse(JSON.stringify(json)));
   }
   async function saveWords(project) {
     await api.call(
