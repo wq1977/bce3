@@ -62,6 +62,10 @@ async function doRecognition() {
     }
 }
 
+function label(track) {
+    return track.name
+}
+
 </script>
 <template>
     <div class="flex my-5">
@@ -77,7 +81,9 @@ async function doRecognition() {
         </SliderRoot>
     </div>
     <div v-for="track in project ? project.tracks : []" class="flex items-center ">
-        <span class="w-[100px]">{{ track.name }}</span>
+        <span class="w-[100px] text-xs font-bold text-gray-500 text-center">{{ label(track) }}<br>{{
+            store.formatDuration(store.getTrackLen(track))
+        }}</span>
         <Draggable v-model="track.origin" group="trackclip" class="flex flex-1 items-center p-2" item-key="name">
             <template #item="{ element }">
                 <div v-if="element.buffer" :style="{ width: `${clipwidth(element)}%` }"

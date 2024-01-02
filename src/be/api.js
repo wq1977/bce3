@@ -369,6 +369,7 @@ const api = {
     const cp = spawn(python, [model, target], {
       env: {
         OMP_NUM_THREADS: Math.max(1, require("os").cpus.length - 1),
+        LANG: "zh",
       },
     });
     let result = "";

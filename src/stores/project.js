@@ -123,10 +123,11 @@ export const useProjectStore = defineStore("project", () => {
       [];
   }
   async function saveAlbums() {
+    const { coverUrl, ...others } = albums.value;
     await api.call(
       "save2file",
       "album.json",
-      JSON.parse(JSON.stringify(albums.value))
+      JSON.parse(JSON.stringify(others))
     );
   }
   async function saveWords(project) {
@@ -136,6 +137,14 @@ export const useProjectStore = defineStore("project", () => {
       "words.json",
       JSON.parse(JSON.stringify(project.words))
     );
+  }
+  function formatDuration(secs) {
+    const hour = Math.floor(secs / 3600);
+    const minute = Math.floor((secs % 3600) / 60);
+    const sec = Math.floor(secs % 60);
+    return `${hour < 10 ? "0" : ""}${hour}:${minute < 10 ? "0" : ""}${minute}:${
+      sec < 10 ? "0" : ""
+    }${sec}`;
   }
   async function saveParagraph(project) {
     await api.call(
@@ -395,15 +404,20 @@ export const useProjectStore = defineStore("project", () => {
     play(allsource);
   }
 
+  function getTrackLen(track) {
+    let trackLength = 0;
+    for (let origin of track.origin) {
+      trackLength += origin.buffer ? origin.buffer.duration : 0;
+    }
+    return trackLength;
+  }
+
   //返回最长的那个track的长度，支持不同的sampleRate
   function projectTrackLen(project) {
     let projectLength = 0;
     if (project) {
       for (let track of project.tracks) {
-        let trackLength = 0;
-        for (let origin of track.origin) {
-          trackLength += origin.buffer ? origin.buffer.length : 0;
-        }
+        const trackLength = getTrackLen(track);
         if (trackLength > projectLength) projectLength = trackLength;
       }
     }
@@ -1020,7 +1034,11 @@ export const useProjectStore = defineStore("project", () => {
     progress.value = 0;
     let screenLock = await navigator.wakeLock.request("screen");
     const lenlimit = projectTrackLen(project);
-    const offlineCtx = new OfflineAudioContext(1, lenlimit, S2T_SAMPLE_RATE);
+    const offlineCtx = new OfflineAudioContext(
+      1,
+      Math.ceil(lenlimit * S2T_SAMPLE_RATE),
+      S2T_SAMPLE_RATE
+    );
     playTracks(project, 0, offlineCtx);
     const buffer = await offlineCtx.startRendering();
     const s2t = await api.call("recognition", project.id, toWav(buffer));
@@ -1187,6 +1205,7 @@ export const useProjectStore = defineStore("project", () => {
     setTag,
     setHot,
     getWordsBuffer,
+    formatDuration,
     playWords,
     playWordsRaw,
     saveWords,
@@ -1200,6 +1219,7 @@ export const useProjectStore = defineStore("project", () => {
     deleteProject,
     saveProject,
     recognition,
+    getTrackLen,
     projectTrackLen,
     getHotLines,
     getContentBlocks,

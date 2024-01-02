@@ -16,13 +16,6 @@ if (!store.list.length) {
     init()
 }
 
-function fmtFrameDuration(secs) {
-    const hour = Math.floor(secs / 3600);
-    const minute = Math.floor((secs % 3600) / 60);
-    const sec = Math.floor(secs % 60);
-    return `${hour < 10 ? "0" : ""}${hour}:${minute < 10 ? "0" : ""}${minute}:${sec < 10 ? "0" : ""
-        }${sec}`;
-}
 const titlelist = computed({
     get: () => {
         const list = store.getContentBlocks(project.value).map(b => ({
@@ -31,7 +24,7 @@ const titlelist = computed({
         let duration = 0;
         for (let block of list) {
             duration += block.duration
-            block.duration = fmtFrameDuration(duration)
+            block.duration = store.formatDuration(duration)
         }
         return list
     },
