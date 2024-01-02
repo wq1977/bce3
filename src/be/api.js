@@ -47,6 +47,31 @@ const api = {
     } else {
       abspath = require("path").join(PROJ_BASE, projname, path);
     }
+
+    function FloatArray2Int16(floatbuffer, adjust) {
+      var int16Buffer = new Int16Array(floatbuffer.length);
+      for (var i = 0, len = floatbuffer.length; i < len; i++) {
+        if (floatbuffer[i] < 0) {
+          int16Buffer[i] = 0x8000 * (floatbuffer[i] * adjust);
+        } else {
+          int16Buffer[i] = 0x7fff * (floatbuffer[i] * adjust);
+        }
+      }
+      return int16Buffer;
+    }
+
+    let max = 0;
+    for (let i = 0; i < channels.length; i++) {
+      for (let j = 0; j < channels[i].length; j++) {
+        if (Math.abs(channels[i][j]) > max) {
+          max = Math.abs(channels[i][j]);
+        }
+      }
+    }
+    const MAX_VOL = 0.8;
+    for (let i = 0; i < channels.length; i++) {
+      channels[i] = FloatArray2Int16(channels[i], MAX_VOL / max);
+    }
     return new Promise((r) => {
       event.sender.send("mp3-progress", { running: true, progress: 0 });
       const { Worker } = require("worker_threads");

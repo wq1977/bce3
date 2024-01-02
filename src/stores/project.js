@@ -351,17 +351,6 @@ export const useProjectStore = defineStore("project", () => {
     }
   }
 
-  function FloatArray2Int16(floatbuffer) {
-    var int16Buffer = new Int16Array(floatbuffer.length);
-    for (var i = 0, len = floatbuffer.length; i < len; i++) {
-      if (floatbuffer[i] < 0) {
-        int16Buffer[i] = 0x8000 * floatbuffer[i];
-      } else {
-        int16Buffer[i] = 0x7fff * floatbuffer[i];
-      }
-    }
-    return int16Buffer;
-  }
   //导出，渲染工程输出文件，转换成mp3，并且保存最终结果
   async function doExport(project) {
     let screenLock = await navigator.wakeLock.request("screen");
@@ -372,7 +361,7 @@ export const useProjectStore = defineStore("project", () => {
       if (buffer) {
         const channels = [];
         for (let i = 0; i < buffer.numberOfChannels; i++) {
-          channels.push(FloatArray2Int16(buffer.getChannelData(i)));
+          channels.push(buffer.getChannelData(i));
         }
         await api.call("save2mp3", project.id, "final.mp3", channels);
         return buffer.duration;
