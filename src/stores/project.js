@@ -883,9 +883,7 @@ export const useProjectStore = defineStore("project", () => {
     }
   }
 
-  async function setTag(project, paragraphIdx, wordstart, wordend, tag) {
-    if (project.paragraphs[paragraphIdx].start > wordstart) return;
-    if (project.paragraphs[paragraphIdx].end < wordend) return;
+  async function setTag(project, wordstart, wordend, tag) {
     if (tag == "hot") {
       for (let i = wordstart; i < wordend; i++) {
         project.words[i].ishot = true;
@@ -895,11 +893,18 @@ export const useProjectStore = defineStore("project", () => {
         project.words[i].type = tag;
       }
     }
-    project.paragraphs[paragraphIdx].pieces = words2pieces(
-      project,
-      project.paragraphs[paragraphIdx].start,
-      project.paragraphs[paragraphIdx].end
-    );
+    for (let i = 0; i < project.paragraphs.length; i++) {
+      if (
+        project.paragraphs[i].start <= wordstart &&
+        project.paragraphs[i].end >= wordend
+      ) {
+        project.paragraphs[i].pieces = words2pieces(
+          project,
+          project.paragraphs[i].start,
+          project.paragraphs[i].end
+        );
+      }
+    }
     saveWords(project);
     saveParagraph(project);
   }

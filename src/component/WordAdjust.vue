@@ -52,6 +52,11 @@ function dragStart(e, wordidx) {
         e.stopPropagation()
         document.onmouseup = null;
         document.onmousemove = null;
+        console.log('change x', adjFrame.value)
+        if (adjFrame.value == 0) {
+            store.setTag(project.value, props.from + wordidx, props.from + wordidx + 1, limitwords.value[wordidx].type == 'delete' ? '' : 'delete')
+            return
+        }
         const origin = limitwords.value[wordidx].start
         const newvalue = origin + adjFrame.value
 
@@ -127,17 +132,20 @@ async function drawFrame() {
     context.restore();
 }
 
+function clickWord(w) {
+    console.log(w)
+}
+
 onMounted(() => {
     drawFrame()
-    const { ctx } = getCurrentInstance()
-    ctx.proxy.$forceUpdate()
 })
 
 </script>
 <template>
     <div ref="adjustor" class="relative z-50" @click.stop.prevent="() => { }">
         <canvas ref="canvas" width="600" height="90"></canvas>
-        <span class="absolute cursor-pointer select-none" @mousedown="dragStart($event, idx)"
+        <span class="absolute cursor-pointer select-none data-[tag=delete]:line-through data-[tag=delete]:text-red-600"
+            @mousedown="dragStart($event, idx)" :data-tag="word.type || 'normal'"
             :style="{ left: `${pos(word.start + (idx == dragingIdx ? adjFrame : 0))}px` }"
             v-for="(word, idx) in limitwords">{{
                 word.word }}</span>

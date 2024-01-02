@@ -128,7 +128,7 @@ function onTxtDbclick() {
 
 function setSelectionTag(tag) {
     if (selWordStart.value != null && selWordEnd.value != null) {
-        store.setTag(project.value, selParagraph.value, selWordStart.value, selWordEnd.value, tag)
+        store.setTag(project.value, selWordStart.value, selWordEnd.value, tag)
     }
 }
 
