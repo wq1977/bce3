@@ -88,6 +88,14 @@ const api = {
     });
   },
   async publish(event, album, projectid) {
+    let epidSeed = 0;
+    for (let episode of album.episodes) {
+      if (episode.epid) {
+        epidSeed = episode.epid;
+      } else if (epidSeed) {
+        episode.epid = ++epidSeed;
+      }
+    }
     const indexPathBase = require("path").join(PROJ_BASE, "www", album.id);
     if (!require("fs").existsSync(indexPathBase)) {
       require("fs").mkdirSync(indexPathBase, { recursive: true });
