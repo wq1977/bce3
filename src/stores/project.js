@@ -338,6 +338,7 @@ export const useProjectStore = defineStore("project", () => {
     } else if (piece.type == "mute") {
       piece.sources = [];
     } else if (piece.type == "beep") {
+      //TODO adjust beep volumn dynamic
       piece.sources = [
         {
           buffer: beepBuffer,
