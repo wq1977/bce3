@@ -934,11 +934,9 @@ export const useProjectStore = defineStore("project", () => {
     );
     let idx = 0;
     if (!project.tracks || !project.tracks.length) {
-      project.tracks = files.map((_, idx) => [
-        {
-          name: `track${idx + 1}`,
-        },
-      ]);
+      project.tracks = [...files].map((_, idx) => ({
+        name: `track${idx + 1}`,
+      }));
     }
     for (let audio of audioBuffers) {
       const track = project.tracks[idx % project.tracks.length];
