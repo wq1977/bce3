@@ -26,6 +26,15 @@ const totalLen = computed(() => {
     return result || 1
 })
 
+
+const hotlineDelta = computed({
+    get: () => project.value ? [project.value.cfg.hotlineDelta || 5] : [5],
+    set: (value) => {
+        project.value.cfg.hotlineDelta = value[0];
+        store.saveProject(project.value)
+    }
+})
+
 const paragraphDelta = computed({
     get: () => project.value ? [project.value.cfg.paragraphDelta || 5] : [5],
     set: (value) => {
@@ -135,62 +144,64 @@ async function doPlay() {
 </script>
 <template>
     <div v-if="project">
-        <div class="py-5 mt-[50px] bg-gray-300 border-b border-white">
-            <SliderRoot v-model="playProgress" @update:modelValue="setProgress"
-                class="relative flex items-center select-none touch-none  h-5" :min="0" :max="100" :step="1">
-                <SliderTrack class="bg-gray-100 relative grow rounded-full h-[3px]">
-                    <SliderRange class="absolute bg-white rounded-full h-full" />
-                </SliderTrack>
-                <SliderThumb class="block w-5 h-5 bg-white rounded-[10px] hover:bg-violet3 focus:outline-none"
-                    aria-label="Volume" />
-            </SliderRoot>
-        </div>
         <div class="overflow-x-auto">
-            <div class="flex relative   bg-green-100 h-[50px]">
-                <span class="absolute text-sm top-[15px] left-[5px] text-black/30">人声轨道</span>
-                <div v-for="piece in playSources.filter(p => p.type == 'content' || p.type == 'hot')"
-                    :style="{ left: `${piece.when * 100 / totalLen}%`, width: `${piece.duration * 100 / totalLen}%` }"
-                    :data-type="piece.type" class="absolute h-[100px] bg-gray-200 data-[type='hot']:bg-orange-200">
-                </div>
+            <div class="py-5 mt-[50px] bg-gray-300 border-b border-white" :style="{ width: `${totalLen * 10}px` }">
+                <SliderRoot v-model="playProgress" @update:modelValue="setProgress"
+                    class="relative flex items-center select-none touch-none  h-5" :min="0" :max="100" :step="0.01">
+                    <SliderTrack class="bg-gray-100 relative grow rounded-full h-[3px]">
+                        <SliderRange class="absolute bg-white rounded-full h-full" />
+                    </SliderTrack>
+                    <SliderThumb class="block w-5 h-5 bg-white rounded-[10px] hover:bg-violet3 focus:outline-none"
+                        aria-label="Volume" />
+                </SliderRoot>
             </div>
-            <div v-if="project.cfg.piantou && project.cfg.usePianTou"
-                class="flex relative  bg-green-100 h-[50px] border-t border-white">
-                <div v-for="piece in playSources.filter(p => p.type == 'piantou')"
-                    :style="{ left: `${piece.when * 100 / totalLen}%`, width: `${piece.duration * 100 / totalLen}%` }"
-                    class="absolute h-[50px] bg-red-200">
+            <div class="overflow-x-auto" :style="{ width: `${totalLen * 10}px` }">
+                <div class="flex relative   bg-green-100 h-[50px]">
+                    <span class="absolute text-sm top-[15px] left-[5px] text-black/30">人声轨道</span>
+                    <div v-for="piece in playSources.filter(p => p.type == 'content' || p.type == 'hot')"
+                        :style="{ left: `${piece.when * 100 / totalLen}%`, width: `${piece.duration * 100 / totalLen}%` }"
+                        :data-type="piece.type" class="absolute h-[100px] bg-gray-200 data-[type='hot']:bg-orange-200">
+                    </div>
                 </div>
-                <svg v-for="piece in playSources.filter(p => p.type == 'piantou')" style="width:100%;height:100%;"
-                    class="absolute left-0 top-0">
-                    <line v-for="line in vols2line(piece)" :x1="`${line.x1}%`" :y1="`${line.y1}%`" :x2="`${line.x2}%`"
-                        :y2="`${line.y2}%`" style="stroke: red;stroke-width: 2;"></line>
-                </svg>
-                <span class="absolute text-sm top-[15px] left-[5px] text-black/30">片头音乐轨道</span>
-            </div>
-            <div v-if="project.cfg.bgm && project.cfg.useBGM"
-                class="flex relative overflow-x-auto bg-green-100 h-[50px] border-t border-white">
-                <div v-for="piece in playSources.filter(p => p.type == 'bgm')"
-                    :style="{ left: `${piece.when * 100 / totalLen}%`, width: `${piece.duration * 100 / totalLen}%` }"
-                    class="absolute h-[50px] bg-blue-200">
+                <div v-if="project.cfg.piantou && project.cfg.usePianTou"
+                    class="flex relative  bg-green-100 h-[50px] border-t border-white">
+                    <div v-for="piece in playSources.filter(p => p.type == 'piantou')"
+                        :style="{ left: `${piece.when * 100 / totalLen}%`, width: `${piece.duration * 100 / totalLen}%` }"
+                        class="absolute h-[50px] bg-red-200">
+                    </div>
+                    <svg v-for="piece in playSources.filter(p => p.type == 'piantou')" style="width:100%;height:100%;"
+                        class="absolute left-0 top-0">
+                        <line v-for="line in vols2line(piece)" :x1="`${line.x1}%`" :y1="`${line.y1}%`" :x2="`${line.x2}%`"
+                            :y2="`${line.y2}%`" style="stroke: red;stroke-width: 2;"></line>
+                    </svg>
+                    <span class="absolute text-sm top-[15px] left-[5px] text-black/30">片头音乐轨道</span>
                 </div>
-                <svg v-for="piece in playSources.filter(p => p.type == 'bgm')" style="width:100%;height:100%;"
-                    class="absolute left-0 top-0">
-                    <line v-for="line in vols2line(piece)" :x1="`${line.x1}%`" :y1="`${line.y1}%`" :x2="`${line.x2}%`"
-                        :y2="`${line.y2}%`" style="stroke: red;stroke-width: 2;"></line>
-                </svg>
-                <span class="absolute text-sm top-[15px] left-[5px] text-black/30">背景音乐轨道</span>
-            </div>
-            <div v-if="project.cfg.pianwei && project.cfg.usePianWei"
-                class="flex relative  bg-green-100 h-[50px] border-t border-white">
-                <div v-for="piece in playSources.filter(p => p.type == 'pianwei')"
-                    :style="{ left: `${piece.when * 100 / totalLen}%`, width: `${piece.duration * 100 / totalLen}%` }"
-                    class="absolute h-[50px] bg-yellow-200">
+                <div v-if="project.cfg.bgm && project.cfg.useBGM"
+                    class="flex relative overflow-x-auto bg-green-100 h-[50px] border-t border-white">
+                    <div v-for="piece in playSources.filter(p => p.type == 'bgm')"
+                        :style="{ left: `${piece.when * 100 / totalLen}%`, width: `${piece.duration * 100 / totalLen}%` }"
+                        class="absolute h-[50px] bg-blue-200">
+                    </div>
+                    <svg v-for="piece in playSources.filter(p => p.type == 'bgm')" style="width:100%;height:100%;"
+                        class="absolute left-0 top-0">
+                        <line v-for="line in vols2line(piece)" :x1="`${line.x1}%`" :y1="`${line.y1}%`" :x2="`${line.x2}%`"
+                            :y2="`${line.y2}%`" style="stroke: red;stroke-width: 2;"></line>
+                    </svg>
+                    <span class="absolute text-sm top-[15px] left-[5px] text-black/30">背景音乐轨道</span>
                 </div>
-                <svg v-for="piece in playSources.filter(p => p.type == 'pianwei')" style="width:100%;height:100%;"
-                    class="absolute left-0 top-0">
-                    <line v-for="line in vols2line(piece)" :x1="`${line.x1}%`" :y1="`${line.y1}%`" :x2="`${line.x2}%`"
-                        :y2="`${line.y2}%`" style="stroke: red;stroke-width: 2;"></line>
-                </svg>
-                <span class="absolute text-sm top-[15px] left-[5px] text-black/30">片尾音乐轨道</span>
+                <div v-if="project.cfg.pianwei && project.cfg.usePianWei"
+                    class="flex relative  bg-green-100 h-[50px] border-t border-white">
+                    <div v-for="piece in playSources.filter(p => p.type == 'pianwei')"
+                        :style="{ left: `${piece.when * 100 / totalLen}%`, width: `${piece.duration * 100 / totalLen}%` }"
+                        class="absolute h-[50px] bg-yellow-200">
+                    </div>
+                    <svg v-for="piece in playSources.filter(p => p.type == 'pianwei')" style="width:100%;height:100%;"
+                        class="absolute left-0 top-0">
+                        <line v-for="line in vols2line(piece)" :x1="`${line.x1}%`" :y1="`${line.y1}%`" :x2="`${line.x2}%`"
+                            :y2="`${line.y2}%`" style="stroke: red;stroke-width: 2;"></line>
+                    </svg>
+                    <span class="absolute text-sm top-[15px] left-[5px] text-black/30">片尾音乐轨道</span>
+                </div>
             </div>
         </div>
         <div class="border-t border-white bg-gray-300 p-5 text-right">
@@ -201,11 +212,22 @@ async function doPlay() {
         </div>
         <div class="mt-[50px] bg-gray-300 p-5">
             <fieldset class="mb-[15px] flex items-center">
+                <label class="w-[90px] text-right text-[15px] mr-3 relative" for="name"> 金句间隔
+                    <span class="absolute left-[3em] top-[-1em] text-sm text-gray-500">{{ hotlineDelta[0] }}秒</span>
+                </label>
+                <SliderRoot v-model="hotlineDelta" class="relative flex-1 flex items-center select-none touch-none  h-5"
+                    :min="1" :max="50" :step="1">
+                    <SliderTrack class="bg-gray-100 relative grow rounded-full h-[3px]">
+                        <SliderRange class="absolute bg-white rounded-full h-full" />
+                    </SliderTrack>
+                    <SliderThumb class="block w-5 h-5 bg-white  rounded-[10px] hover:bg-violet3 focus:outline-none"
+                        aria-label="Volume" />
+                </SliderRoot>
                 <label class="w-[90px] text-right text-[15px] mr-3 relative" for="name"> 段落间隔
                     <span class="absolute left-[3em] top-[-1em] text-sm text-gray-500">{{ paragraphDelta[0] }}秒</span>
                 </label>
                 <SliderRoot v-model="paragraphDelta" class="relative flex-1 flex items-center select-none touch-none  h-5"
-                    :min="1" :max="50" :step="1">
+                    :min="0.01" :max="50" :step="1">
                     <SliderTrack class="bg-gray-100 relative grow rounded-full h-[3px]">
                         <SliderRange class="absolute bg-white rounded-full h-full" />
                     </SliderTrack>
@@ -244,8 +266,8 @@ async function doPlay() {
                 </label>
                 <span v-if="project.cfg.piantou" class="select-none mr-2">低音音量：</span>
                 <SliderRoot v-if="project.cfg.piantou" v-model="project.cfg.piantou.lowVol" @update:modelValue="dosave"
-                    class="relative flex items-center select-none touch-none w-[100px] mr-2 h-5" :min="0.1" :max="0.5"
-                    :step="0.1">
+                    class="relative flex items-center flex-1 select-none touch-none w-[100px] mr-2 h-5" :min="0.001"
+                    :max="0.5" :step="0.001">
                     <SliderTrack class="bg-gray-100 relative grow rounded-full h-[3px]">
                         <SliderRange class="absolute bg-white rounded-full h-full" />
                     </SliderTrack>
@@ -254,8 +276,8 @@ async function doPlay() {
                 </SliderRoot>
                 <span v-if="project.cfg.piantou" class="select-none mr-2">高音音量：</span>
                 <SliderRoot v-if="project.cfg.piantou" v-model="project.cfg.piantou.highVol" @update:modelValue="dosave"
-                    class="relative flex items-center select-none touch-none w-[100px] mr-2 h-5" :min="0.5" :max="0.9"
-                    :step="0.1">
+                    class="relative flex items-center flex-1 select-none touch-none w-[100px] mr-2 h-5" :min="0.1"
+                    :max="0.9" :step="0.01">
                     <SliderTrack class="bg-gray-100 relative grow rounded-full h-[3px]">
                         <SliderRange class="absolute bg-white rounded-full h-full" />
                     </SliderTrack>
@@ -286,9 +308,9 @@ async function doPlay() {
                     <input id="music-bg" class="hidden" @change="onSelectBGM" accept=".wav, .mp3, .m4a" type="file" />
                 </label>
                 <span v-if="project.cfg.bgm" class="select-none mr-2">低音音量：</span>
-                <SliderRoot v-if="project.cfg.bgm" v-model="project.cfg.bgm.lowVol" @update:modelValue="setProgress"
-                    class="relative flex items-center select-none touch-none w-[100px] mr-2 h-5" :min="0.01" :max="0.5"
-                    :step="0.03">
+                <SliderRoot v-if="project.cfg.bgm" v-model="project.cfg.bgm.lowVol" @update:modelValue="dosave"
+                    class="relative flex items-center flex-1 select-none touch-none w-[100px] mr-2 h-5" :min="0.01"
+                    :max="0.5" :step="0.01">
                     <SliderTrack class="bg-gray-100 relative grow rounded-full h-[3px]">
                         <SliderRange class="absolute bg-white rounded-full h-full" />
                     </SliderTrack>
@@ -296,9 +318,9 @@ async function doPlay() {
                         aria-label="Volume" />
                 </SliderRoot>
                 <span v-if="project.cfg.bgm" class="select-none mr-2">高音音量：</span>
-                <SliderRoot v-if="project.cfg.bgm" v-model="project.cfg.bgm.highVol" @update:modelValue="setProgress"
-                    class="relative flex items-center select-none touch-none w-[100px] mr-2 h-5" :min="0.5" :max="0.9"
-                    :step="0.1">
+                <SliderRoot v-if="project.cfg.bgm" v-model="project.cfg.bgm.highVol" @update:modelValue="dosave"
+                    class="relative flex items-center flex-1 select-none touch-none w-[100px] mr-2 h-5" :min="0.01"
+                    :max="0.9" :step="0.01">
                     <SliderTrack class="bg-gray-100 relative grow rounded-full h-[3px]">
                         <SliderRange class="absolute bg-white rounded-full h-full" />
                     </SliderTrack>
@@ -337,9 +359,9 @@ async function doPlay() {
                         type="file" />
                 </label>
                 <span v-if="project.cfg.pianwei" class="select-none mr-2">低音音量：</span>
-                <SliderRoot v-if="project.cfg.pianwei" v-model="project.cfg.pianwei.lowVol" @update:modelValue="setProgress"
-                    class="relative flex items-center select-none touch-none w-[100px] mr-2 h-5" :min="0.1" :max="0.5"
-                    :step="0.1">
+                <SliderRoot v-if="project.cfg.pianwei" v-model="project.cfg.pianwei.lowVol" @update:modelValue="dosave"
+                    class="relative flex items-center flex-1 select-none touch-none w-[100px] mr-2 h-5" :min="0.01"
+                    :max="0.5" :step="0.01">
                     <SliderTrack class="bg-gray-100 relative grow rounded-full h-[3px]">
                         <SliderRange class="absolute bg-white rounded-full h-full" />
                     </SliderTrack>
@@ -347,10 +369,9 @@ async function doPlay() {
                         aria-label="Volume" />
                 </SliderRoot>
                 <span v-if="project.cfg.pianwei" class="select-none mr-2">高音音量：</span>
-                <SliderRoot v-if="project.cfg.pianwei" v-model="project.cfg.pianwei.highVol"
-                    @update:modelValue="setProgress"
-                    class="relative flex items-center select-none touch-none w-[100px] mr-2 h-5" :min="0.5" :max="0.9"
-                    :step="0.1">
+                <SliderRoot v-if="project.cfg.pianwei" v-model="project.cfg.pianwei.highVol" @update:modelValue="dosave"
+                    class="relative flex items-center flex-1 select-none touch-none w-[100px] mr-2 h-5" :min="0.01"
+                    :max="0.9" :step="0.01">
                     <SliderTrack class="bg-gray-100 relative grow rounded-full h-[3px]">
                         <SliderRange class="absolute bg-white rounded-full h-full" />
                     </SliderTrack>

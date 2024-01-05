@@ -88,8 +88,7 @@ function label(track) {
             <template #item="{ element }">
                 <div v-if="element.buffer" :style="{ width: `${clipwidth(element)}%` }"
                     class="group relative bg-gray-200 border border-gray-300 flex justify-center text-sm p-2 font-bold text-gray-500 cursor-grab">
-                    {{
-                        element.name }}
+                    {{ element.name }}
                     <Icon @click.stop="deleteBuffer(project, track, element)" icon="fluent:delete-12-regular"
                         class="group-hover:inline hidden absolute text-lg right-1 top-1 text-blue-300 hover:text-blue-500" />
                 </div>

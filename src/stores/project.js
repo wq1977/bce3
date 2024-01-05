@@ -347,6 +347,7 @@ export const useProjectStore = defineStore("project", () => {
           offset: 0,
           duration: piece.duration,
           loop: true,
+          volumn: 0.5,
         },
       ];
     }
@@ -452,6 +453,7 @@ export const useProjectStore = defineStore("project", () => {
     if (project.cfg) {
       CHANGE_VOLUMN_DURATION = project.cfg.fadeDuration || 1;
       paragraphDelay = project.cfg.paragraphDelta || PARAGRAPH_DEFAULT_DELAY;
+      const hotDelay = project.cfg.hotlineDelta || PARAGRAPH_DEFAULT_DELAY;
       if (project.cfg.usePianTou && project.cfg.piantou) {
         if (!buffers[project.cfg.piantou.name]) return [];
         const highVol = project.cfg.piantou.highVol || 0.9;
@@ -460,12 +462,13 @@ export const useProjectStore = defineStore("project", () => {
           when,
           type: "piantou",
           offset: 0,
+          loop: true,
           duration: buffers[project.cfg.piantou.name].duration,
           buffer: buffers[project.cfg.piantou.name],
           volumns: [{ at: when, volumn: highVol }],
         };
         allsource.push(piantouSource);
-        const HOTLINE_PADDING_LEFT = paragraphDelay;
+        const HOTLINE_PADDING_LEFT = hotDelay;
         //hotline是type是hot的piece
         const hotlines = getHotLines(project);
         let currentHotEndAt = 0;
@@ -520,13 +523,23 @@ export const useProjectStore = defineStore("project", () => {
             at: when + CHANGE_VOLUMN_DURATION * 2,
             volumn: highVol,
           });
-          if (when < piantouSource.when + piantouSource.duration) {
-            when = piantouSource.when + piantouSource.duration;
-          }
+          // if (when < piantouSource.when + piantouSource.duration) {
+          //   when = piantouSource.when + piantouSource.duration;
+          // }
+          piantouSource.duration = when + HOTLINE_PADDING_LEFT;
+          piantouSource.volumns.push({
+            at: piantouSource.duration - CHANGE_VOLUMN_DURATION * 2,
+            volumn: highVol,
+          });
+          piantouSource.volumns.push({
+            at: piantouSource.duration,
+            volumn: lowVol,
+          });
         }
-        if (when < piantouSource.when + piantouSource.duration) {
-          when = piantouSource.when + piantouSource.duration;
-        }
+        // if (when < piantouSource.when + piantouSource.duration) {
+        //   when = piantouSource.when + piantouSource.duration;
+        // }
+        when = piantouSource.duration;
         if (when < paragraphDelay) when = paragraphDelay;
       }
     }
@@ -608,13 +621,14 @@ export const useProjectStore = defineStore("project", () => {
 
     // 片尾曲（如果有）将完整播放，可以指定一个提前播放量，如果有提前播放，音乐将自动控制
     if (project.cfg.usePianWei && project.cfg.pianwei) {
+      const FADEIN_TIME = 3;
       if (!buffers[project.cfg.pianwei.name]) return [];
       const highVol = project.cfg.pianwei.highVol || 0.9;
       const lowVol = project.cfg.pianwei.lowVol || 0.1;
       const pianwei = {
         type: "pianwei",
         when: project.cfg.pianwei.fadein
-          ? when - Math.min(lastParagraphDuration, paragraphDelay)
+          ? when - Math.min(lastParagraphDuration, FADEIN_TIME)
           : when,
         offset: 0,
         buffer: buffers[project.cfg.pianwei.name],
@@ -622,7 +636,7 @@ export const useProjectStore = defineStore("project", () => {
         volumns: project.cfg.pianwei.fadein
           ? [
               {
-                at: when - Math.min(lastParagraphDuration, paragraphDelay),
+                at: when - Math.min(lastParagraphDuration, FADEIN_TIME),
                 volumn: lowVol,
               },
               { at: when, volumn: lowVol },
@@ -706,7 +720,7 @@ export const useProjectStore = defineStore("project", () => {
       ctx = new AudioContext();
     }
     let g = ctx.createGain();
-    g.gain.value = 0.5;
+    g.gain.value = 1;
     g.connect(ctx.destination);
     const nodes = getPlayNodes(ctx, g, sources);
     nodes.forEach(({ when, offset, duration, node }) => {
@@ -820,33 +834,40 @@ export const useProjectStore = defineStore("project", () => {
   }
 
   function getPlayNodes(ctx, dest, sources) {
-    return sources.map(({ when, offset, duration, buffer, loop, volumns }) => {
-      const node = ctx.createBufferSource();
-      node.buffer = buffer;
-      node.loop = !!loop;
-      if (volumns) {
-        let localG = ctx.createGain();
-        localG.gain.value = volumns[volumns.length - 1].volumn;
-        for (let idx = 0; idx < volumns.length; idx++) {
-          let volumn = volumns[idx];
-          if (idx == 0) {
-            localG.gain.setValueAtTime(volumn.volumn, volumn.at);
-          } else {
-            localG.gain.linearRampToValueAtTime(volumn.volumn, volumn.at);
+    return sources.map(
+      ({ when, offset, duration, buffer, loop, volumn, volumns }) => {
+        const node = ctx.createBufferSource();
+        node.buffer = buffer;
+        node.loop = !!loop;
+        if (volumn) {
+          let localG = ctx.createGain();
+          localG.gain.value = volumn;
+          localG.connect(dest);
+          node.connect(localG);
+        } else if (volumns) {
+          let localG = ctx.createGain();
+          localG.gain.value = volumns[volumns.length - 1].volumn;
+          for (let idx = 0; idx < volumns.length; idx++) {
+            let volumn = volumns[idx];
+            if (idx == 0) {
+              localG.gain.setValueAtTime(volumn.volumn, volumn.at);
+            } else {
+              localG.gain.linearRampToValueAtTime(volumn.volumn, volumn.at);
+            }
           }
+          localG.connect(dest);
+          node.connect(localG);
+        } else {
+          node.connect(dest);
         }
-        localG.connect(dest);
-        node.connect(localG);
-      } else {
-        node.connect(dest);
+        return {
+          when,
+          offset,
+          duration,
+          node,
+        };
       }
-      return {
-        when,
-        offset,
-        duration,
-        node,
-      };
-    });
+    );
   }
 
   async function getSourcesBuffer(sources) {
@@ -901,10 +922,23 @@ export const useProjectStore = defineStore("project", () => {
   async function setHot(project, paragraphIdx, wordstart, wordend, value) {
     if (project.paragraphs[paragraphIdx].start > wordstart) return;
     if (project.paragraphs[paragraphIdx].end < wordend) return;
-    for (let i = wordstart; i <= wordend; i++) {
+    for (let i = wordstart; i < wordend; i++) {
       project.words[i].ishot = value;
     }
+    for (let i = 0; i < project.paragraphs.length; i++) {
+      if (
+        project.paragraphs[i].start <= wordstart &&
+        project.paragraphs[i].end >= wordend
+      ) {
+        project.paragraphs[i].pieces = words2pieces(
+          project,
+          project.paragraphs[i].start,
+          project.paragraphs[i].end
+        );
+      }
+    }
     saveWords(project);
+    saveParagraph(project);
   }
   function updateParagraphsPieces(project, idx) {
     project.paragraphs[idx].pieces = words2pieces(
