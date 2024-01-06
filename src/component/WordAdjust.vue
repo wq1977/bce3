@@ -45,7 +45,6 @@ function pos(frame) {
 }
 
 function dragStart(e, wordidx) {
-    return;
     e.preventDefault();
     e.stopPropagation()
     dragingIdx.value = wordidx
