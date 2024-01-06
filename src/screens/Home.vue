@@ -52,7 +52,7 @@ const noAlbumList = computed({
 const albums = computed(() => projStore.albums.map(album => ({
     ...album,
     list: computed({
-        get: () => projStore.list.filter(p => p.tracks.length && p.album == album.id).sort((a, b) => (a.albumIndex || 0) - (b.albumIndex || 0)),
+        get: () => projStore.list.filter(p => p.tracks.length && p.album == album.id).sort((a, b) => a.epid != b.epid ? a.epid - b.epid : a.updateat - b.updateat),
         set(list) {
             list.forEach((proj, idx) => {
                 proj.album = album.id

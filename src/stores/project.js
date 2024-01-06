@@ -113,7 +113,10 @@ export const useProjectStore = defineStore("project", () => {
       albums.value = JSON.parse(str);
       for (let album of albums.value) {
         album.coverUrl = await loadAlbumCover(album);
-        updateAlbumIndex(album.id);
+        const changed = updateAlbumIndex(album.id);
+        for (let p of changed) {
+          await saveProject(p);
+        }
       }
     }
   }
@@ -988,6 +991,7 @@ export const useProjectStore = defineStore("project", () => {
     await saveProject(project);
   }
   function newProject(options = {}) {
+    //TODO set epid
     const id = moment().format("YYYYMMDDHHmmss");
     list.value.push({
       id,
@@ -1181,16 +1185,18 @@ export const useProjectStore = defineStore("project", () => {
     const eps = list.value
       .filter((p) => p.tracks.length && p.album == albumid)
       .sort((a, b) => (a.albumIndex || 0) - (b.albumIndex || 0));
-    let epidBaseIdx = 0;
-    let epidBase = 0;
+    let epChanged = [];
     for (let i = 0; i < eps.length; i++) {
-      if (eps[i].epid) {
-        epidBaseIdx = i;
-        epidBase = eps[i].epid;
-      } else {
-        eps[i].albumIndex = i - epidBaseIdx + epidBase - 1;
+      if (!eps[i].epid) {
+        if (i == 0) {
+          eps[i].epid = 1;
+        } else {
+          eps[i].epid = eps[i - 1].epid + 1;
+        }
+        epChanged.push(eps[i]);
       }
     }
+    return epChanged;
   }
 
   async function setProjectEpid(project, epid) {
