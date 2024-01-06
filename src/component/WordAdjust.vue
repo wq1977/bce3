@@ -45,7 +45,9 @@ function pos(frame) {
 }
 
 function dragStart(e, wordidx) {
+    return;
     e.preventDefault();
+    e.stopPropagation()
     dragingIdx.value = wordidx
     document.onmouseup = (e) => {
         e.preventDefault();
@@ -76,6 +78,7 @@ function dragStart(e, wordidx) {
     };
     document.onmousemove = (e) => {
         e.preventDefault();
+        e.stopPropagation()
         const originPos = pos(limitwords.value[wordidx].start)
         const rect = canvas.value.getBoundingClientRect()
         const newPos = e.clientX - rect.left;

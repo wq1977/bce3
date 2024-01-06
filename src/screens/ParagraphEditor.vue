@@ -139,6 +139,10 @@ function setSelectionHot(value) {
 }
 
 function pieceMouseup() {
+    if (doAdjust.value) {
+        //调整窗口开启状态不尽兴修改
+        return;
+    }
     const selection = getSelection()
     console.log('selection may change:', selection.type)
     if (selection.type == 'Range') {
@@ -206,8 +210,7 @@ function pieceMouseup() {
                                 :data-tag="piece.type || 'normal'" @dblclick="onTxtDbclick" @mouseup="pieceMouseup"
                                 :data-ishot="piece.ishot" @keydown="paragraphKeyDown($event, idx, piece)" tabindex="0"
                                 class="leading-loose break-all focus:outline-none decoration-4 decoration-dashed data-[tag=mute]:underline data-[tag=beep]:line-through data-[ishot=true]:bg-orange-200 data-[tag=beep]:decoration-wavy data-[tag=beep]:text-blue-600 data-[tag=delete]:line-through data-[tag=delete]:text-red-600 antialiased">
-                                {{
-                                    piece.text }} </span>
+                                {{ piece.text }} </span>
                         </div>
 
                     </div>
@@ -271,7 +274,7 @@ function pieceMouseup() {
             <button @click="() => { store.stop(); store.stop = null }"
                 class="w-[70px] h-[70px] rounded-full border-2 hover:bg-gray-600 bg-gray-600/70 text-white">stop</button>
         </div>
-        <DialogRoot v-model:open="doAdjust" :modal="false">
+        <DialogRoot v-model:open="doAdjust" :modal="true">
             <DialogPortal>
                 <DialogOverlay class="bg-blackA9 data-[state=open]:animate-overlayShow fixed inset-0 z-30" />
                 <DialogContent
