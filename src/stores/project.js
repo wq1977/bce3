@@ -5,7 +5,7 @@ import toWav from "audiobuffer-to-wav";
 import { VIEW_PORT } from "../common/common";
 import DefaultCover from "../../assets/album.png";
 
-const PARAGRAPH_DEFAULT_DELAY = 3;
+const PARAGRAPH_DEFAULT_DELAY = 0;
 const S2T_SAMPLE_RATE = 44100;
 const GENURATE_SAMPLE_RATE = 44100;
 
