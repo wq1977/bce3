@@ -7,6 +7,7 @@ const store = useProjectStore()
 const route = useRoute()
 const project = ref(null);
 const forceSeed = ref(1)
+const zoom = ref(false)
 if (!store.list.length) {
     store.load().then(init)
 } else {
@@ -86,6 +87,13 @@ async function onSelectPianWei(e) {
     forceSeed.value++
 }
 
+function fmt(secs) {
+    const hour = Math.floor(secs / 3600)
+    const minutes = Math.floor(secs / 60)
+    const seconds = Math.floor(secs % 60)
+    return `${hour >= 10 ? hour : `0${hour}`}:${minutes >= 10 ? minutes : `0${minutes}`}:${seconds >= 10 ? seconds : `0${seconds}`}`
+}
+
 async function onSelectBGM(e) {
     const info = await loadAudio(e)
     project.value.cfg.bgm = { ...info }
@@ -145,7 +153,8 @@ async function doPlay() {
 <template>
     <div v-if="project">
         <div class="overflow-x-auto">
-            <div class="py-5 mt-[50px] bg-gray-300 border-b border-white" :style="{ width: `${totalLen * 10}px` }">
+            <div class="py-5 mt-[50px] bg-gray-300 border-b px-1 border-white"
+                :style="{ width: zoom ? `${totalLen * 10}px` : '100%' }">
                 <SliderRoot v-model="playProgress" @update:modelValue="setProgress"
                     class="relative flex items-center select-none touch-none  h-5" :min="0" :max="100" :step="0.01">
                     <SliderTrack class="bg-gray-100 relative grow rounded-full h-[3px]">
@@ -155,8 +164,8 @@ async function doPlay() {
                         aria-label="Volume" />
                 </SliderRoot>
             </div>
-            <div class="overflow-x-auto" :style="{ width: `${totalLen * 10}px` }">
-                <div class="flex relative   bg-green-100 h-[50px]">
+            <div class="overflow-x-auto bg-gray-300 px-1" :style="{ width: zoom ? `${totalLen * 10}px` : '100%' }">
+                <div class="flex relative bg-green-100 h-[50px]">
                     <span class="absolute text-sm top-[15px] left-[5px] text-black/30">人声轨道</span>
                     <div v-for="piece in playSources.filter(p => p.type == 'content' || p.type == 'hot')"
                         :style="{ left: `${piece.when * 100 / totalLen}%`, width: `${piece.duration * 100 / totalLen}%` }"
@@ -204,7 +213,11 @@ async function doPlay() {
                 </div>
             </div>
         </div>
-        <div class="border-t border-white bg-gray-300 p-5 text-right">
+        <div class="border-t border-white bg-gray-300 p-5 flex items-center">
+            <button @click="zoom = !zoom"
+                class="text-green-800 mr-5 font-semibold shadow-gray-700 hover:bg-green-300 inline-flex h-[35px] items-center justify-center rounded-[4px] bg-white px-[15px] leading-none shadow-[0_2px_10px] focus:outline-none">缩放轨道</button>
+            <div class="flex-1"></div>
+            <span class="px-2 font-mono"> {{ fmt(totalLen * playProgress[0] / 100) }} / {{ fmt(totalLen) }}</span>
             <button v-if="store.stop" @click="store.stop()"
                 class="text-green-800 mr-5 font-semibold shadow-gray-700 hover:bg-green-300 inline-flex h-[35px] items-center justify-center rounded-[4px] bg-white px-[15px] leading-none shadow-[0_2px_10px] focus:outline-none">停止</button>
             <button v-else @click="doPlay"
