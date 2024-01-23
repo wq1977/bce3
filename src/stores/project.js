@@ -92,11 +92,6 @@ export const useProjectStore = defineStore("project", () => {
   const list = ref([]);
   const shareList = ref([]);
   const stop = ref(null);
-  watch(stop, (_, old) => {
-    if (old) {
-      old();
-    }
-  });
   function newAlbum() {
     const id = moment().format("YYYYMMDDHHmmss");
     albums.value = [{ id, name: "", desc: "" }, ...albums.value];
@@ -715,6 +710,16 @@ export const useProjectStore = defineStore("project", () => {
   }
 
   function play(sources, seek = 0, ctx = null) {
+    if (stop.value) {
+      stop.value();
+      stop.value = null;
+      progressType.value = "";
+      progress.value = 0;
+      setTimeout(() => {
+        play(sources, seek, ctx);
+      }, 300);
+      return;
+    }
     const deepClone = sources.map((s) => ({ ...s }));
     const totalLen = getSourcesLen(deepClone);
     const seekPosition = totalLen * seek;
