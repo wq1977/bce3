@@ -38,7 +38,7 @@ function pos(frame) {
     const rect = c.getBoundingClientRect()
     const rootrect = adjustor.value.getBoundingClientRect()
     const canvasLeft = rect.left - rootrect.left
-    const width = c.width
+    const width = 600
     const total = project.value.words[limitTo.value].end - project.value.words[props.from].start
     const result = (frame - project.value.words[props.from].start) * width / total + canvasLeft
     return result
@@ -81,7 +81,8 @@ function dragStart(e, wordidx) {
         const originPos = pos(limitwords.value[wordidx].start)
         const rect = canvas.value.getBoundingClientRect()
         const newPos = e.clientX - rect.left;
-        const width = canvas.value.width
+        console.log('new pos', newPos, originPos, rect)
+        const width = rect.width
         const total = limitwords.value[limitwords.value.length - 1].end - limitwords.value[0].start
         adjFrame.value = Math.round((newPos - originPos) * total / width)
         cursorLeft.value = newPos
@@ -97,8 +98,8 @@ async function drawFrame() {
     const context = canvas.value.getContext('2d')
     const dpr = window.devicePixelRatio
     console.log('dpr is', dpr,'canvas width is', canvas.value.width)
-    const logicalWidth = canvas.value.width
-    const logicalHeight = canvas.value.height
+    const logicalWidth = 600
+    const logicalHeight = 90
     canvas.value.width = logicalWidth * dpr
     canvas.value.height = logicalHeight * dpr
     canvas.value.style.width = logicalWidth + 'px'
