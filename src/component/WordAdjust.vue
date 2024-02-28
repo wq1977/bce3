@@ -96,6 +96,7 @@ async function drawFrame() {
     var leftChannel = buffer.getChannelData(0);
     const context = canvas.value.getContext('2d')
     const dpr = window.devicePixelRatio
+    console.log('dpr is', dpr,'canvas width is', canvas.value.width)
     const logicalWidth = canvas.value.width
     const logicalHeight = canvas.value.height
     canvas.value.width = logicalWidth * dpr
@@ -103,8 +104,8 @@ async function drawFrame() {
     canvas.value.style.width = logicalWidth + 'px'
     canvas.value.style.height = logicalHeight + 'px'
     context.scale(dpr, dpr)
-    const width = canvas.value.width
-    const height = canvas.value.height
+    const width = logicalWidth // canvas.value.width
+    const height = logicalHeight // canvas.value.height
     context.fillStyle = 'white';
     context.fillRect(0, 0, width, height);
     context.strokeStyle = 'black';
