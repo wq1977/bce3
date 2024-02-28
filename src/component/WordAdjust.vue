@@ -59,7 +59,7 @@ function dragStart(e, wordidx) {
                 store.setTag(project.value, props.from + wordidx, props.from + wordidx + 1, limitwords.value[wordidx].type == 'delete' ? '' : 'delete')
             } else if (e.button==2) {
                 let firstDelete =  -1
-                for (let i=limitwords.value.length;i>=0;i--) {
+                for (let i=limitwords.value.length-1;i>=0;i--) {
                     if (limitwords.value[i].type == 'delete'){
                         firstDelete =i ;
                         break
