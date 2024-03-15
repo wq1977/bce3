@@ -381,6 +381,14 @@ const api = {
     );
   },
   recognition(event, proj, buffer) {
+    const wordsPath = require("path").join(
+      PROJ_BASE,
+      proj,
+      "__words__.json"
+    );
+    if (require('fs').existsSync(wordsPath)) {
+      return JSON.parse(require('fs').readFileSync(wordsPath).toString())
+    }
     const tmppath = require("path").join(
       PROJ_BASE,
       proj,
@@ -393,13 +401,14 @@ const api = {
     }
     const python = require("path").join(
       appRoot,
-      "whisper",
-      process.platform === "win32" ? "work.exe" : "work/work"
+      "bin",
+      "aitool",
+      "aitool"
     );
-    let model = require("path").join(appRoot, "whisper", "models", "base");
+    let model = require("path").join(appRoot, "bin", "models", "small");
     model = model.replace(/\\/g, "/");
     const target = tmppath;
-    const cp = spawn(python, [model, target], {
+    const cp = spawn(python, ["whisper", model, target], {
       env: {
         OMP_NUM_THREADS: Math.max(1, require("os").cpus.length - 1),
         LANG: "zh",
