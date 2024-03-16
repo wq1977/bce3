@@ -60,7 +60,7 @@ function words2pieces(project, start, end) {
             currentPiece.type == "delete"
               ? 0
               : (currentPiece.frameEnd - currentPiece.frameStart) /
-                S2T_SAMPLE_RATE,
+              S2T_SAMPLE_RATE,
         });
       }
       currentPiece = {
@@ -139,9 +139,8 @@ export const useProjectStore = defineStore("project", () => {
     const hour = Math.floor(secs / 3600);
     const minute = Math.floor((secs % 3600) / 60);
     const sec = Math.floor(secs % 60);
-    return `${hour < 10 ? "0" : ""}${hour}:${minute < 10 ? "0" : ""}${minute}:${
-      sec < 10 ? "0" : ""
-    }${sec}`;
+    return `${hour < 10 ? "0" : ""}${hour}:${minute < 10 ? "0" : ""}${minute}:${sec < 10 ? "0" : ""
+      }${sec}`;
   }
   async function saveParagraph(project) {
     await api.call(
@@ -210,6 +209,18 @@ export const useProjectStore = defineStore("project", () => {
       }
     }
   }
+
+  function smartEdit(project, wordidx) {
+    let start = 0
+      for (let i = wordidx - 1; i >= 0; i--) {
+        if (project.words[i].type !== project.words[wordidx].type) {
+          start = i + 1
+          break
+        }
+      }
+      setTag(project, start, wordidx+1, project.words[wordidx].type == 'delete' ? '' : 'delete')
+  }
+
   //把某个段落从某个piece的position的位置分为两段
   function splitParagraph(project, paragraphIdx, piece, position) {
     const wordidx = getWordIndex(project, piece, position);
@@ -633,13 +644,13 @@ export const useProjectStore = defineStore("project", () => {
         duration: buffers[project.cfg.pianwei.name].duration,
         volumns: project.cfg.pianwei.fadein
           ? [
-              {
-                at: when - Math.min(lastParagraphDuration, FADEIN_TIME),
-                volumn: lowVol,
-              },
-              { at: when, volumn: lowVol },
-              { at: when + 1, volumn: highVol },
-            ]
+            {
+              at: when - Math.min(lastParagraphDuration, FADEIN_TIME),
+              volumn: lowVol,
+            },
+            { at: when, volumn: lowVol },
+            { at: when + 1, volumn: highVol },
+          ]
           : [{ at: when, volumn: highVol }],
       };
       allsource.push(pianwei);
@@ -678,7 +689,7 @@ export const useProjectStore = defineStore("project", () => {
                   source.volumns[i].volumn +
                   ((source.volumns[i + 1].volumn - source.volumns[i].volumn) *
                     (0 - source.volumns[i].at)) /
-                    (source.volumns[i + 1].at - source.volumns[i].at),
+                  (source.volumns[i + 1].at - source.volumns[i].at),
               });
             } else {
               //no need this volumn setting, skip
@@ -1168,7 +1179,7 @@ export const useProjectStore = defineStore("project", () => {
         album.coverUrl = URL.createObjectURL(new Blob([cover]));
         return album.coverUrl;
       }
-    } catch (err) {}
+    } catch (err) { }
     return DefaultCover;
   }
 
@@ -1183,7 +1194,7 @@ export const useProjectStore = defineStore("project", () => {
           project.coverUrl = await loadAlbumCover(album);
         }
       }
-    } catch (err) {}
+    } catch (err) { }
   }
 
   function updateAlbumIndex(albumid) {
@@ -1274,6 +1285,7 @@ export const useProjectStore = defineStore("project", () => {
     updateAlbumIndex,
     doPublishAlbum,
     fixLongWord,
+    smartEdit
   };
 });
 
@@ -1282,7 +1294,7 @@ if (import.meta.vitest) {
   describe("", async () => {
     const { setActivePinia, createPinia } = await import("pinia");
     setActivePinia(createPinia());
-    global.api = { call: () => {}, on: () => {} };
+    global.api = { call: () => { }, on: () => { } };
     const store = useProjectStore();
     it("fox long word", () => {
       const words = store.fixLongWord([
@@ -1442,7 +1454,7 @@ if (import.meta.vitest) {
       ).toBe(1);
     });
     it("getProjectSources", async () => {
-      global.AudioContext = class {};
+      global.AudioContext = class { };
       beepBuffer = {};
       const allsources = store.getProjectSources({
         cfg: {},

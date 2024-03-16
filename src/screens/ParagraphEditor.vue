@@ -119,9 +119,9 @@ function playFromHere() {
     }
 }
 
-let clickWaitConfirm=false
+let clickWaitConfirm = false
 function onTxtDbclick() {
-    clickWaitConfirm  = false
+    clickWaitConfirm = false
     playFromHere()
 }
 
@@ -138,19 +138,26 @@ function setSelectionHot(value) {
 }
 
 function pieceMouseup(e) {
-    clickWaitConfirm = true
     const range = document.caretRangeFromPoint(e.clientX, e.clientY)
     let nodeBase = range.startContainer
     if (nodeBase.nodeName !== 'SPAN') {
         nodeBase = nodeBase.parentNode
     }
     const paragraphIdxBase = parseInt(nodeBase.getAttribute('data-paragraph'))
+    if (isNaN(paragraphIdxBase)) return;
     const pieceIdxBase = parseInt(nodeBase.getAttribute('data-piece'))
     const wordBase = store.getWordIndex(project.value, project.value.paragraphs[paragraphIdxBase].pieces[pieceIdxBase], range.startOffset)
+
+    if (e.button == 2) {
+        store.smartEdit(project.value, wordBase)
+        return
+    }
+
+    clickWaitConfirm = true
     selWordStart.value = wordBase
     setTimeout(() => {
         if (clickWaitConfirm) {
-            selWordStart.value = Math.max(0,wordBase-3)
+            selWordStart.value = Math.max(0, wordBase - 3)
             selWordEnd.value = wordBase + 3
             selParagraph.value = paragraphIdxBase
             if (store.stop) {
@@ -167,83 +174,27 @@ function pieceMouseup(e) {
         <div class="text-2xl font-black antialiased p-2">
             <input v-model="project.name" @change="store.saveProject(project)" placeholder="请输入单集标题" />
         </div>
-        <ContextMenuRoot :modal="false">
-            <ContextMenuTrigger :disabled="!selWordEnd">
-                <div class="mr-[320px]">
-                    <div ref="paraRefs" v-for="(paragraph, idx) in project.paragraphs"
-                        class="text-justify leading-relaxed p-2 focus:outline-none " :key="paragraph.start">
-                        <div>
-                            <span contenteditable @keydown="preventEnter" @blur="setComment($event, idx)"
-                                :data-used="!!paragraph.comment"
-                                class="font-black text-gray-300 data-[used=true]:text-green-600 mr-2 px-1">
-                                {{ `${paragraph.comment || '未使用'}` }}</span>
-                            <Icon @click="store.playParagraph(project, paragraph)" icon="zondicons:play-outline"
-                                class="inline mr-2" />
-                            <span>&nbsp;&nbsp;</span>
-                            <span v-for="(piece, pidx) in paragraph.pieces" :data-paragraph="idx" :data-piece="pidx"
-                                :data-tag="piece.type || 'normal'" @dblclick="onTxtDbclick" @click="pieceMouseup"
-                                :data-ishot="piece.ishot" @keydown="paragraphKeyDown($event, idx, piece)" tabindex="0"
-                                class="leading-loose cursor-pointer select-none break-all focus:outline-none decoration-4 decoration-dashed data-[tag=mute]:underline data-[tag=beep]:line-through data-[ishot=true]:bg-orange-200 data-[tag=beep]:decoration-wavy data-[tag=beep]:text-blue-600 data-[tag=delete]:line-through data-[tag=delete]:text-red-600 antialiased">
-                                {{ piece.text }} </span>
-                        </div>
-
-                    </div>
+        <div class="mr-[320px]">
+            <div ref="paraRefs" v-for="(paragraph, idx) in project.paragraphs"
+                class="text-justify leading-relaxed p-2 focus:outline-none " :key="paragraph.start">
+                <div>
+                    <span contenteditable @keydown="preventEnter" @blur="setComment($event, idx)"
+                        :data-used="!!paragraph.comment"
+                        class="font-black text-gray-300 data-[used=true]:text-green-600 mr-2 px-1">
+                        {{ `${paragraph.comment || '未使用'}` }}</span>
+                    <Icon @click="store.playParagraph(project, paragraph)" icon="zondicons:play-outline"
+                        class="inline mr-2" />
+                    <span>&nbsp;&nbsp;</span>
+                    <span v-for="(piece, pidx) in paragraph.pieces" :data-paragraph="idx" :data-piece="pidx"
+                        :data-tag="piece.type || 'normal'" @dblclick="onTxtDbclick" @mouseup="pieceMouseup"
+                        :data-ishot="piece.ishot" @keydown="paragraphKeyDown($event, idx, piece)" tabindex="0"
+                        class="leading-loose cursor-pointer select-none break-all focus:outline-none decoration-4 decoration-dashed data-[tag=mute]:underline data-[tag=beep]:line-through data-[ishot=true]:bg-orange-200 data-[tag=beep]:decoration-wavy data-[tag=beep]:text-blue-600 data-[tag=delete]:line-through data-[tag=delete]:text-red-600 antialiased">
+                        {{ piece.text }} </span>
                 </div>
-            </ContextMenuTrigger>
-            <ContextMenuPortal>
-                <ContextMenuContent
-                    class=" min-w-[150px] z-30 bg-white outline-none rounded-md p-[5px] shadow-[0px_10px_38px_-10px_rgba(22,_23,_24,_0.35),_0px_10px_20px_-15px_rgba(22,_23,_24,_0.2)] will-change-[opacity,transform] data-[side=top]:animate-slideDownAndFade data-[side=right]:animate-slideLeftAndFade data-[side=bottom]:animate-slideUpAndFade data-[side=left]:animate-slideRightAndFade"
-                    :side-offset="5">
-                    <ContextMenuItem
-                        class="group text-[13px] leading-none  rounded-[3px] flex items-center h-[25px] px-[5px] relative pl-[18px] select-none outline-none  data-[disabled]:pointer-events-none data-[highlighted]:bg-green-600 data-[highlighted]:text-green-400"
-                        @click="playFromHere()">
-                        <Icon icon="octicon:play-16" class="mr-2 w-[1em]" /> 从此处播放
-                    </ContextMenuItem>
-                    <ContextMenuItem
-                        class="group text-[13px] leading-none  rounded-[3px] flex items-center h-[25px] px-[5px] relative pl-[18px] select-none outline-none  data-[disabled]:pointer-events-none data-[highlighted]:bg-green-600 data-[highlighted]:text-green-400"
-                        @click="playSelection()">
-                        <Icon icon="octicon:play-16" class="mr-2 w-[1em]" /> 播放
-                    </ContextMenuItem>
-                    <ContextMenuItem
-                        class="group text-[13px] leading-none  rounded-[3px] flex items-center h-[25px] px-[5px] relative pl-[18px] select-none outline-none  data-[disabled]:pointer-events-none data-[highlighted]:bg-green-600 data-[highlighted]:text-green-400"
-                        @click="adjustWords()">
-                        <Icon icon="carbon:settings-adjust" class="mr-2 w-[1em]" /> 调整
-                    </ContextMenuItem>
-                    <ContextMenuSeparator class="h-[1px] bg-green-300 m-[5px]" />
-                    <ContextMenuItem
-                        class="group text-[13px] leading-none  rounded-[3px] flex items-center h-[25px] px-[5px] relative pl-[18px] select-none outline-none  data-[disabled]:pointer-events-none data-[highlighted]:bg-green-600 data-[highlighted]:text-green-400"
-                        @click="setSelectionTag('normal')">
-                        <Icon icon="fa-solid:grip-lines" class="mr-2 w-[1em]" /> 正常
-                    </ContextMenuItem>
-                    <ContextMenuItem
-                        class="group text-[13px] leading-none  rounded-[3px] flex items-center h-[25px] px-[5px] relative pl-[18px] select-none outline-none  data-[disabled]:pointer-events-none data-[highlighted]:bg-green-600 data-[highlighted]:text-green-400"
-                        @click="setSelectionTag('mute')">
-                        <Icon icon="fa6-solid:xmarks-lines" class="mr-2 w-[1em]" /> 静音
-                    </ContextMenuItem>
-                    <ContextMenuItem
-                        class="group text-[13px] leading-none  rounded-[3px] flex items-center h-[25px] px-[5px] relative pl-[18px] select-none outline-none  data-[disabled]:pointer-events-none data-[highlighted]:bg-green-600 data-[highlighted]:text-green-400"
-                        @click="setSelectionTag('delete')">
-                        <Icon icon="fa6-solid:xmarks-lines" class="mr-2 w-[1em]" /> 删除
-                    </ContextMenuItem>
-                    <ContextMenuItem
-                        class="group text-[13px] leading-none  rounded-[3px] flex items-center h-[25px] px-[5px] relative pl-[18px] select-none outline-none  data-[disabled]:pointer-events-none data-[highlighted]:bg-green-600 data-[highlighted]:text-green-400"
-                        @click="setSelectionTag('beep')">
-                        <Icon icon="jam:mask-f" class="mr-2 w-[1em]" /> 打码
-                    </ContextMenuItem>
-                    <ContextMenuSeparator class="h-[1px] bg-green-300 m-[5px]" />
-                    <ContextMenuItem
-                        class="group text-[13px] leading-none  rounded-[3px] flex items-center h-[25px] px-[5px] relative pl-[18px] select-none outline-none  data-[disabled]:pointer-events-none data-[highlighted]:bg-green-600 data-[highlighted]:text-green-400"
-                        @click="setSelectionHot(true)">
-                        <Icon icon="jam:mask-f" class="mr-2 w-[1em]" /> 金句
-                    </ContextMenuItem>
-                    <ContextMenuItem
-                        class="group text-[13px] leading-none  rounded-[3px] flex items-center h-[25px] px-[5px] relative pl-[18px] select-none outline-none  data-[disabled]:pointer-events-none data-[highlighted]:bg-green-600 data-[highlighted]:text-green-400"
-                        @click="setSelectionHot(false)">
-                        <Icon icon="jam:mask-f" class="mr-2 w-[1em]" /> 取消金句
-                    </ContextMenuItem>
-                </ContextMenuContent>
-            </ContextMenuPortal>
-        </ContextMenuRoot>
+
+            </div>
+        </div>
+
         <div v-if="store.stop" class="fixed right-1 bottom-1 z-10">
             <button @click="() => { store.stop(); store.stop = null }"
                 class="w-[70px] h-[70px] rounded-full border-2 hover:bg-gray-600 bg-gray-600/70 text-white">stop</button>

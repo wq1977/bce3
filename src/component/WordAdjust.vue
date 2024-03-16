@@ -58,16 +58,7 @@ function dragStart(e, wordidx) {
             if (e.button == 0) {
                 store.setTag(project.value, props.from + wordidx, props.from + wordidx + 1, limitwords.value[wordidx].type == 'delete' ? '' : 'delete')
             } else if (e.button==2) {
-                let firstDelete =  -1
-                for (let i=props.from + wordidx;i>=0;i--) {
-                    if (project.value.words[i].type == 'delete'){
-                        firstDelete =i ;
-                        break
-                    }
-                }
-                if (firstDelete>=0) {
-                    store.setTag(project.value, firstDelete+1, props.from + wordidx + 1, limitwords.value[wordidx].type == 'delete' ? '' : 'delete')
-                }
+                store.smartEdit(project.value, props.from + wordidx)
             }
             return
         }
