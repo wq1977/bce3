@@ -10,7 +10,7 @@ const project = computed(() => store.list.filter(p => p.id == props.projectid)[0
 const limitTo = computed(() => {
     const FRAME_LIMIT = 44100 * 50
     let total = 0
-    for (let i = props.from; i <= props.to; i++) {
+    for (let i = props.from; i <= Math.min(parseInt(props.to), project.value.words.length - 1); i++) {
         if (project.value.words[i].start || project.value.words[i].end) {
             total += (project.value.words[i].end - project.value.words[i].start)
         } else if (project.value.words[i].frameLen) {
@@ -20,7 +20,7 @@ const limitTo = computed(() => {
             return i - 1
         }
     }
-    return parseInt(props.to)
+    return Math.min(parseInt(props.to), project.value.words.length - 1)
 })
 
 const limitwords = computed(() => {
@@ -53,11 +53,11 @@ function dragStart(e, wordidx) {
         e.stopPropagation()
         document.onmouseup = null;
         document.onmousemove = null;
-        console.log('change x', adjFrame.value,e)
+        console.log('change x', adjFrame.value, e)
         if (adjFrame.value == 0) {
             if (e.button == 0) {
                 store.setTag(project.value, props.from + wordidx, props.from + wordidx + 1, limitwords.value[wordidx].type == 'delete' ? '' : 'delete')
-            } else if (e.button==2) {
+            } else if (e.button == 2) {
                 store.smartEdit(project.value, props.from + wordidx)
             }
             return
@@ -101,7 +101,7 @@ async function drawFrame() {
     var leftChannel = buffer.getChannelData(0);
     const context = canvas.value.getContext('2d')
     const dpr = window.devicePixelRatio
-    console.log('dpr is', dpr,'canvas width is', canvas.value.width)
+    console.log('dpr is', dpr, 'canvas width is', canvas.value.width)
     const logicalWidth = 600
     const logicalHeight = 90
     canvas.value.width = logicalWidth * dpr
@@ -156,7 +156,7 @@ onMounted(() => {
             @mousedown="dragStart($event, idx)" :data-tag="word.type || 'normal'"
             :style="{ left: `${pos(word.start + (idx == dragingIdx ? adjFrame : 0))}px` }"
             v-for="(word, idx) in limitwords">{{
-                word.word }}</span>
+        word.word }}</span>
         <div v-if="cursorLeft > 0" :style="{ left: `${cursorLeft}px` }"
             class="absolute left-[100px] w-[2px] bg-red-600 h-[80px] top-[10px]"></div>
     </div>
