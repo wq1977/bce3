@@ -153,6 +153,9 @@ function pieceMouseup(e) {
             selWordStart.value = Math.max(0,wordBase-3)
             selWordEnd.value = wordBase + 3
             selParagraph.value = paragraphIdxBase
+            if (store.stop) {
+                store.stop()
+            }
             adjustWords()
         }
     }, 300);
