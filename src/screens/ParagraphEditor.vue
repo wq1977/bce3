@@ -119,11 +119,10 @@ function playFromHere() {
     }
 }
 
+let clickWaitConfirm=false
 function onTxtDbclick() {
-    console.log('db click called')
-    setTimeout(() => {
-        playFromHere()
-    }, 300);
+    clickWaitConfirm  = false
+    playFromHere()
 }
 
 function setSelectionTag(tag) {
@@ -138,53 +137,25 @@ function setSelectionHot(value) {
     }
 }
 
-function pieceMouseup() {
-    if (doAdjust.value) {
-        //调整窗口开启状态不尽兴修改
-        return;
+function pieceMouseup(e) {
+    clickWaitConfirm = true
+    const range = document.caretRangeFromPoint(e.clientX, e.clientY)
+    let nodeBase = range.startContainer
+    if (nodeBase.nodeName !== 'SPAN') {
+        nodeBase = nodeBase.parentNode
     }
-    const selection = getSelection()
-    console.log('selection may change:', selection.type)
-    if (selection.type == 'Range') {
-        let nodeBase = selection.anchorNode
-        if (nodeBase.nodeName !== 'SPAN') {
-            nodeBase = nodeBase.parentNode
+    const paragraphIdxBase = parseInt(nodeBase.getAttribute('data-paragraph'))
+    const pieceIdxBase = parseInt(nodeBase.getAttribute('data-piece'))
+    const wordBase = store.getWordIndex(project.value, project.value.paragraphs[paragraphIdxBase].pieces[pieceIdxBase], range.startOffset)
+    selWordStart.value = wordBase
+    setTimeout(() => {
+        if (clickWaitConfirm) {
+            selWordStart.value = Math.max(0,wordBase-3)
+            selWordEnd.value = wordBase + 3
+            selParagraph.value = paragraphIdxBase
+            adjustWords()
         }
-        if (nodeBase.nodeName !== 'SPAN') {
-            console.log('select test, base is not span', nodeBase)
-            return
-        }
-        let nodeExtent = selection.extentNode
-        if (nodeExtent.nodeName !== 'SPAN') {
-            nodeExtent = nodeExtent.parentNode
-        }
-        if (nodeExtent.nodeName !== 'SPAN') {
-            console.log('select test, extent is not span', nodeExtent)
-            return
-
-        }
-
-        const paragraphIdxBase = parseInt(nodeBase.getAttribute('data-paragraph'))
-        const paragraphIdxExtent = parseInt(nodeExtent.getAttribute('data-paragraph'))
-        if (paragraphIdxBase !== paragraphIdxExtent) {
-            console.log('not same paragraph', paragraphIdxBase, paragraphIdxExtent)
-            return
-        }
-        const pieceIdxBase = parseInt(nodeBase.getAttribute('data-piece'))
-        const pieceIdxExtent = parseInt(nodeExtent.getAttribute('data-piece'))
-        const vbase = selection.anchorOffset
-        const wordBase = store.getWordIndex(project.value, project.value.paragraphs[paragraphIdxBase].pieces[pieceIdxBase], vbase)
-        const vextent = selection.extentOffset
-        const wordExtent = store.getWordIndex(project.value, project.value.paragraphs[paragraphIdxExtent].pieces[pieceIdxExtent], vextent)
-        selWordStart.value = Math.max(0, Math.min(wordBase, wordExtent))
-        selWordEnd.value = Math.max(wordBase, wordExtent)
-        selParagraph.value = paragraphIdxBase
-    } else {
-        selWordStart.value = null
-        selWordEnd.value = null
-        selParagraph.value = null
-        console.log('remove selword tag')
-    }
+    }, 300);
 }
 
 </script>
@@ -207,9 +178,9 @@ function pieceMouseup() {
                                 class="inline mr-2" />
                             <span>&nbsp;&nbsp;</span>
                             <span v-for="(piece, pidx) in paragraph.pieces" :data-paragraph="idx" :data-piece="pidx"
-                                :data-tag="piece.type || 'normal'" @dblclick="onTxtDbclick" @mouseup="pieceMouseup"
+                                :data-tag="piece.type || 'normal'" @dblclick="onTxtDbclick" @click="pieceMouseup"
                                 :data-ishot="piece.ishot" @keydown="paragraphKeyDown($event, idx, piece)" tabindex="0"
-                                class="leading-loose break-all focus:outline-none decoration-4 decoration-dashed data-[tag=mute]:underline data-[tag=beep]:line-through data-[ishot=true]:bg-orange-200 data-[tag=beep]:decoration-wavy data-[tag=beep]:text-blue-600 data-[tag=delete]:line-through data-[tag=delete]:text-red-600 antialiased">
+                                class="leading-loose cursor-pointer select-none break-all focus:outline-none decoration-4 decoration-dashed data-[tag=mute]:underline data-[tag=beep]:line-through data-[ishot=true]:bg-orange-200 data-[tag=beep]:decoration-wavy data-[tag=beep]:text-blue-600 data-[tag=delete]:line-through data-[tag=delete]:text-red-600 antialiased">
                                 {{ piece.text }} </span>
                         </div>
 
