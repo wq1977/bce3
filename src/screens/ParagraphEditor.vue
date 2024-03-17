@@ -89,7 +89,7 @@ function adjustWords(e) {
     const posy = e.clientY + 30
     const rect = editor.value.getBoundingClientRect()
     adjustLeft.value = Math.min(posx - rect.left, window.innerWidth - 800)
-    adjustTop.value = posy - rect.top
+    adjustTop.value = Math.min(posy - rect.top, rect.height - 200)
     setTimeout(() => {
         doAdjust.value = true
         const unwatch = watch(doAdjust, () => {
@@ -138,8 +138,6 @@ watch(selectRange, () => {
 CSS.highlights.set("user-1-highlight", highlight);
 function clearSelection(e) {
     highlight.clear()
-    selWordStart.value = null
-    selWordEnd.value = null
     selectRange.value = null
 }
 function pieceMouseup(e) {
@@ -159,6 +157,7 @@ function pieceMouseup(e) {
     const wordBase = store.getWordIndex(project.value, project.value.paragraphs[paragraphIdxBase].pieces[pieceIdxBase], range.startOffset)
 
     clickWaitConfirm = true
+    selWordStart.value = wordBase // for dbclick play
     setTimeout(() => {
         if (clickWaitConfirm) {
             selParagraph.value = paragraphIdxBase
@@ -169,7 +168,6 @@ function pieceMouseup(e) {
                 if (wordBase > rangeWordStart) {
                     rangeWordEnd = wordBase
                     range.setStart(selectRange.value.startContainer, selectRange.value.startOffset)
-                    range.setEnd(range.endContainer, range.endOffset)
                 } else {
                     rangeWordEnd = rangeWordStart
                     rangeWordStart = wordBase
@@ -229,7 +227,7 @@ function pieceMouseup(e) {
                     <button @click.stop="store.setTag(project, rangeWordStart - 1, rangeWordEnd, 'delete')"
                         class="text-sm hover:bg-gray-200 px-4 py-1 border rounded">删除</button>
                 </div>
-                <WordAdjust :from="selWordStart" :to="selWordEnd" :projectid="project.id" />
+                <WordAdjust @afterEdit="clearSelection" :from="selWordStart" :to="selWordEnd" :projectid="project.id" />
             </div>
         </div>
         <div class="fixed right-[20px] top-[100px]  border-[1px] p-2 bg-gray-100">

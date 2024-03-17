@@ -6,6 +6,7 @@ const props = defineProps(['from', 'to', 'projectid'])
 const adjFrame = ref(0)
 const cursorLeft = ref(-1)
 const dragingIdx = ref(-1)
+const emit = defineEmits(['afterEdit'])
 const project = computed(() => store.list.filter(p => p.id == props.projectid)[0])
 const limitTo = computed(() => {
     const FRAME_LIMIT = 44100 * 50
@@ -60,6 +61,7 @@ function dragStart(e, wordidx) {
             } else if (e.button == 2) {
                 store.smartEdit(project.value, props.from + wordidx)
             }
+            emit('afterEdit')
             return
         }
         const origin = limitwords.value[wordidx].start
@@ -78,6 +80,7 @@ function dragStart(e, wordidx) {
         cursorLeft.value = -1
         store.playWordsRaw(project.value, props.from + wordidx, props.to)
         store.saveWords(project.value)
+        emit('afterEdit')
     };
     document.onmousemove = (e) => {
         e.preventDefault();
