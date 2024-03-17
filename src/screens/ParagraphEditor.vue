@@ -9,7 +9,10 @@ const store = useProjectStore()
 const route = useRoute()
 const project = ref(null);
 const paraRefs = ref(null)
+const editor = ref(null)
 const doAdjust = ref(false)
+const adjustLeft = ref(0)
+const adjustTop = ref(0)
 if (!store.list.length) {
     store.load().then(init)
 } else {
@@ -81,25 +84,12 @@ watch(() => selWordEnd.value, () => {
     console.log('selword change to:', selWordEnd.value)
 })
 
-let selectionCheckTimer
-function selectionChange(e) {
-    if (selectionCheckTimer) {
-        clearTimeout(selectionCheckTimer)
-    }
-    selectionCheckTimer = setTimeout(() => {
-        selectionCheckTimer = null
-        pieceMouseup(e)
-    }, 300);
-}
-onMounted(() => {
-    document.addEventListener('selectionchange', selectionChange);
-})
-
-onUnmounted(() => {
-    document.removeEventListener('selectionchange', selectionChange)
-})
-
-function adjustWords() {
+function adjustWords(e) {
+    const posx = e.clientX
+    const posy = e.clientY + 30
+    const rect = editor.value.getBoundingClientRect()
+    adjustLeft.value = Math.min(posx - rect.left, window.innerWidth - 800)
+    adjustTop.value = posy - rect.top
     setTimeout(() => {
         doAdjust.value = true
         const unwatch = watch(doAdjust, () => {
@@ -137,6 +127,21 @@ function setSelectionHot(value) {
     }
 }
 
+let selectRange = ref(null)
+let highlight = new Highlight(), rangeWordStart = 0, rangeWordEnd = 0
+watch(selectRange, () => {
+    highlight.clear()
+    if (selectRange.value) {
+        highlight.add(selectRange.value)
+    }
+})
+CSS.highlights.set("user-1-highlight", highlight);
+function clearSelection(e) {
+    highlight.clear()
+    selWordStart.value = null
+    selWordEnd.value = null
+    selectRange.value = null
+}
 function pieceMouseup(e) {
     const range = document.caretRangeFromPoint(e.clientX, e.clientY)
     let nodeBase = range.startContainer
@@ -144,37 +149,53 @@ function pieceMouseup(e) {
         nodeBase = nodeBase.parentNode
     }
     const paragraphIdxBase = parseInt(nodeBase.getAttribute('data-paragraph'))
-    if (isNaN(paragraphIdxBase)) return;
+    if (isNaN(paragraphIdxBase)) {
+        console.log('not in text zone')
+        highlight.clear()
+        selectRange.value = null
+        return;
+    }
     const pieceIdxBase = parseInt(nodeBase.getAttribute('data-piece'))
     const wordBase = store.getWordIndex(project.value, project.value.paragraphs[paragraphIdxBase].pieces[pieceIdxBase], range.startOffset)
 
-    if (e.button == 2) {
-        store.smartEdit(project.value, wordBase)
-        return
-    }
-
     clickWaitConfirm = true
-    selWordStart.value = wordBase
     setTimeout(() => {
         if (clickWaitConfirm) {
-            selWordStart.value = Math.max(0, wordBase - 3)
-            selWordEnd.value = wordBase + 3
             selParagraph.value = paragraphIdxBase
             if (store.stop) {
                 store.stop()
             }
-            adjustWords()
+            if (selectRange.value) {
+                if (wordBase > rangeWordStart) {
+                    rangeWordEnd = wordBase
+                    range.setStart(selectRange.value.startContainer, selectRange.value.startOffset)
+                    range.setEnd(range.endContainer, range.endOffset)
+                } else {
+                    rangeWordEnd = rangeWordStart
+                    rangeWordStart = wordBase
+                    range.setStart(range.startContainer, Math.max(0, range.startOffset - 1))
+                    range.setEnd(selectRange.value.startContainer, selectRange.value.startOffset)
+                }
+            } else {
+                range.setStart(range.startContainer, Math.max(0, range.startOffset - 1))
+                range.setEnd(range.endContainer, range.endOffset)
+                rangeWordStart = wordBase
+            }
+            selWordStart.value = Math.max(0, wordBase - 3)
+            selWordEnd.value = wordBase + 3
+            selectRange.value = range
+            adjustWords(e)
         }
     }, 300);
 }
 
 </script>
 <template>
-    <div v-if="project" class="relative">
+    <div v-if="project" ref="editor" class="relative">
         <div class="text-2xl font-black antialiased p-2">
             <input v-model="project.name" @change="store.saveProject(project)" placeholder="请输入单集标题" />
         </div>
-        <div class="mr-[320px]">
+        <div class="pr-[320px]" @click="clearSelection">
             <div ref="paraRefs" v-for="(paragraph, idx) in project.paragraphs"
                 class="text-justify leading-relaxed p-2 focus:outline-none " :key="paragraph.start">
                 <div>
@@ -186,9 +207,9 @@ function pieceMouseup(e) {
                         class="inline mr-2" />
                     <span>&nbsp;&nbsp;</span>
                     <span v-for="(piece, pidx) in paragraph.pieces" :data-paragraph="idx" :data-piece="pidx"
-                        :data-tag="piece.type || 'normal'" @dblclick="onTxtDbclick" @mouseup="pieceMouseup"
+                        :data-tag="piece.type || 'normal'" @dblclick="onTxtDbclick" @click.stop="pieceMouseup"
                         :data-ishot="piece.ishot" @keydown="paragraphKeyDown($event, idx, piece)" tabindex="0"
-                        class="leading-loose cursor-pointer select-none break-all focus:outline-none decoration-4 decoration-dashed data-[tag=mute]:underline data-[tag=beep]:line-through data-[ishot=true]:bg-orange-200 data-[tag=beep]:decoration-wavy data-[tag=beep]:text-blue-600 data-[tag=delete]:line-through data-[tag=delete]:text-red-600 antialiased">
+                        class="leading-loose select-none break-all focus:outline-none decoration-4 decoration-dashed data-[tag=mute]:underline data-[tag=beep]:line-through data-[ishot=true]:bg-orange-200 data-[tag=beep]:decoration-wavy data-[tag=beep]:text-blue-600 data-[tag=delete]:line-through data-[tag=delete]:text-red-600 antialiased">
                         {{ piece.text }} </span>
                 </div>
 
@@ -199,28 +220,18 @@ function pieceMouseup(e) {
             <button @click="() => { store.stop(); store.stop = null }"
                 class="w-[70px] h-[70px] rounded-full border-2 hover:bg-gray-600 bg-gray-600/70 text-white">stop</button>
         </div>
-        <DialogRoot v-model:open="doAdjust" :modal="true">
-            <DialogPortal>
-                <DialogOverlay class="bg-blackA9 data-[state=open]:animate-overlayShow fixed inset-0 z-30" />
-                <DialogContent
-                    class="data-[state=open]:animate-contentShow fixed top-[50%] left-[50%] max-h-[85vh] w-[90vw] max-w-[640px] translate-x-[-50%] translate-y-[-50%] rounded-[6px] bg-white p-[25px] shadow-[hsl(206_22%_7%_/_35%)_0px_10px_38px_-10px,_hsl(206_22%_7%_/_20%)_0px_10px_20px_-15px] focus:outline-none z-[100]">
-                    <DialogTitle class="text-mauve12 m-0 text-[17px] font-semibold">
-                        片段精校
-                    </DialogTitle>
-                    <DialogDescription class="text-mauve11 mt-[10px] mb-5 text-[15px] leading-normal">
-                        拖拽单词以调整其发生位置.
-                    </DialogDescription>
-                    <fieldset class="mb-[15px] flex items-center gap-5">
-                        <WordAdjust :from="selWordStart" :to="selWordEnd" :projectid="project.id" />
-                    </fieldset>
-                    <DialogClose
-                        class="text-grass11 hover:bg-green4 focus:shadow-green7 absolute top-[10px] right-[10px] inline-flex h-[25px] w-[25px] appearance-none items-center justify-center rounded-full focus:shadow-[0_0_0_2px] focus:outline-none"
-                        aria-label="Close">
-                        <Icon icon="lucide:x" />
-                    </DialogClose>
-                </DialogContent>
-            </DialogPortal>
-        </DialogRoot>
+        <div v-if="doAdjust" @click="doAdjust = false" class="absolute left-0 right-0 top-0 bottom-0">
+            <div :style="{ left: `${adjustLeft}px`, top: `${adjustTop}px` }"
+                class="absolute w-[700px] h-[180px] flex items-center justify-center flex-col pb-4 z-[100] rounded left-[100px] top-[100px] bg-white border-2 shadow border-gray-300">
+                <div class="flex justify-end w-full px-2">
+                    <button @click.stop="store.setTag(project, rangeWordStart - 1, rangeWordEnd, '')"
+                        class="text-sm hover:bg-gray-200 px-4 py-1 border rounded">正常</button>
+                    <button @click.stop="store.setTag(project, rangeWordStart - 1, rangeWordEnd, 'delete')"
+                        class="text-sm hover:bg-gray-200 px-4 py-1 border rounded">删除</button>
+                </div>
+                <WordAdjust :from="selWordStart" :to="selWordEnd" :projectid="project.id" />
+            </div>
+        </div>
         <div class="fixed right-[20px] top-[100px]  border-[1px] p-2 bg-gray-100">
             <div class="text-lg p-2 text-gray-600 antialiased font-bold">故事大纲：</div>
             <div class="max-h-[80vh] overflow-y-auto w-[300px]">
@@ -238,3 +249,10 @@ function pieceMouseup(e) {
         </div>
     </div>
 </template>
+
+<style>
+::highlight(user-1-highlight) {
+    background-color: black;
+    color: yellow;
+}
+</style>
