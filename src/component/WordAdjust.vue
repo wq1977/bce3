@@ -3,6 +3,9 @@ import { ref, computed, onMounted, watch, getCurrentInstance } from 'vue';
 import { useProjectStore } from '../stores/project';
 const store = useProjectStore()
 const props = defineProps(['from', 'to', 'projectid'])
+watch(() => `${props.from}-${props.to}`, () => {
+    drawFrame()
+})
 const adjFrame = ref(0)
 const cursorLeft = ref(-1)
 const dragingIdx = ref(-1)

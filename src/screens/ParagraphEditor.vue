@@ -84,32 +84,33 @@ watch(() => selWordEnd.value, () => {
     console.log('selword change to:', selWordEnd.value)
 })
 
-function adjustWords(e) {
-    const posx = e.clientX
-    const posy = e.clientY + 30
-    const rect = editor.value.getBoundingClientRect()
-    adjustLeft.value = Math.min(posx - rect.left, window.innerWidth - 800)
-    adjustTop.value = Math.min(posy - rect.top, rect.height - 200)
-    setTimeout(() => {
-        doAdjust.value = true
-        const unwatch = watch(doAdjust, () => {
-            unwatch()
-            store.updateParagraphsPieces(project.value, selParagraph.value)
-        })
-    }, 100);
-}
+// function adjustWords(e) {
+//     const posx = e.clientX
+//     const posy = e.clientY + 30
+//     const rect = editor.value.getBoundingClientRect()
+//     adjustLeft.value = Math.min(posx - rect.left, window.innerWidth - 800)
+//     adjustTop.value = Math.min(posy - rect.top, rect.height - 200)
+//     setTimeout(() => {
+//         doAdjust.value = true
+//         const unwatch = watch(doAdjust, () => {
+//             unwatch()
+//             store.updateParagraphsPieces(project.value, selParagraph.value)
+//         })
+//     }, 100);
+// }
 
 function playSelection() {
     store.playWords(project.value, selWordStart.value, selWordEnd.value)
 }
 
 function playFromHere() {
-    if (selWordStart.value != null) {
-        store.playWords(project.value, selWordStart.value, project.value.words.length)
+    if (dbPlayFrom != null) {
+        store.playWords(project.value, dbPlayFrom, project.value.words.length)
     }
 }
 
 let clickWaitConfirm = false
+let dbPlayFrom = null
 function onTxtDbclick() {
     clickWaitConfirm = false
     playFromHere()
@@ -157,14 +158,15 @@ function pieceMouseup(e) {
     const wordBase = store.getWordIndex(project.value, project.value.paragraphs[paragraphIdxBase].pieces[pieceIdxBase], range.startOffset)
 
     clickWaitConfirm = true
-    selWordStart.value = wordBase // for dbclick play
-    setTimeout(() => {
+    dbPlayFrom = wordBase
+    setTimeout(async () => {
         if (clickWaitConfirm) {
             selParagraph.value = paragraphIdxBase
             if (store.stop) {
-                store.stop()
+                await store.stop()
+                await new Promise(r => setTimeout(r, 300))
             }
-            if (selectRange.value) {
+            if (rangeWordStart) {
                 if (wordBase > rangeWordStart) {
                     rangeWordEnd = wordBase
                     range.setStart(selectRange.value.startContainer, selectRange.value.startOffset)
@@ -182,45 +184,38 @@ function pieceMouseup(e) {
             selWordStart.value = Math.max(0, wordBase - 3)
             selWordEnd.value = wordBase + 3
             selectRange.value = range
-            adjustWords(e)
         }
     }, 300);
 }
 
 </script>
 <template>
-    <div v-if="project" ref="editor" class="relative">
+    <div v-if="project" ref="editor" class="relative flex-1 flex flex-col">
         <div class="text-2xl font-black antialiased p-2">
             <input v-model="project.name" @change="store.saveProject(project)" placeholder="请输入单集标题" />
         </div>
-        <div class="pr-[320px]" @click="clearSelection">
-            <div ref="paraRefs" v-for="(paragraph, idx) in project.paragraphs"
-                class="text-justify leading-relaxed p-2 focus:outline-none " :key="paragraph.start">
-                <div>
-                    <span contenteditable @keydown="preventEnter" @blur="setComment($event, idx)"
-                        :data-used="!!paragraph.comment"
-                        class="font-black text-gray-300 data-[used=true]:text-green-600 mr-2 px-1">
-                        {{ `${paragraph.comment || '未使用'}` }}</span>
-                    <Icon @click="store.playParagraph(project, paragraph)" icon="zondicons:play-outline"
-                        class="inline mr-2" />
-                    <span>&nbsp;&nbsp;</span>
-                    <span v-for="(piece, pidx) in paragraph.pieces" :data-paragraph="idx" :data-piece="pidx"
-                        :data-tag="piece.type || 'normal'" @dblclick="onTxtDbclick" @click.stop="pieceMouseup"
-                        :data-ishot="piece.ishot" @keydown="paragraphKeyDown($event, idx, piece)" tabindex="0"
-                        class="leading-loose select-none break-all focus:outline-none decoration-4 decoration-dashed data-[tag=mute]:underline data-[tag=beep]:line-through data-[ishot=true]:bg-orange-200 data-[tag=beep]:decoration-wavy data-[tag=beep]:text-blue-600 data-[tag=delete]:line-through data-[tag=delete]:text-red-600 antialiased">
-                        {{ piece.text }} </span>
+        <div class="pr-[320px] flex-1 flex flex-col" @click="clearSelection">
+            <div class="overflow-y-auto max-h-[calc(100vh-320px)] p-1">
+                <div ref="paraRefs" v-for="(paragraph, idx) in project.paragraphs"
+                    class="text-justify leading-relaxed p-2 focus:outline-none " :key="paragraph.start">
+                    <div>
+                        <span contenteditable @keydown="preventEnter" @blur="setComment($event, idx)"
+                            :data-used="!!paragraph.comment"
+                            class="font-black text-gray-300 data-[used=true]:text-green-600 mr-2 px-1">
+                            {{ `${paragraph.comment || '未使用'}` }}</span>
+                        <Icon @click="store.playParagraph(project, paragraph)" icon="zondicons:play-outline"
+                            class="inline mr-2" />
+                        <span>&nbsp;&nbsp;</span>
+                        <span v-for="(piece, pidx) in paragraph.pieces" :data-paragraph="idx" :data-piece="pidx"
+                            :data-tag="piece.type || 'normal'" @dblclick="onTxtDbclick" @click.stop="pieceMouseup"
+                            :data-ishot="piece.ishot" @keydown="paragraphKeyDown($event, idx, piece)" tabindex="0"
+                            class="leading-loose select-none break-all focus:outline-none decoration-4 decoration-dashed data-[tag=mute]:underline data-[tag=beep]:line-through data-[ishot=true]:bg-orange-200 data-[tag=beep]:decoration-wavy data-[tag=beep]:text-blue-600 data-[tag=delete]:line-through data-[tag=delete]:text-red-600 antialiased">
+                            {{ piece.text }} </span>
+                    </div>
+
                 </div>
-
             </div>
-        </div>
-
-        <div v-if="store.stop" class="fixed right-1 bottom-1 z-10">
-            <button @click="() => { store.stop(); store.stop = null }"
-                class="w-[70px] h-[70px] rounded-full border-2 hover:bg-gray-600 bg-gray-600/70 text-white">stop</button>
-        </div>
-        <div v-if="doAdjust" @click="doAdjust = false" class="absolute left-0 right-0 top-0 bottom-0">
-            <div :style="{ left: `${adjustLeft}px`, top: `${adjustTop}px` }"
-                class="absolute w-[700px] h-[180px] flex items-center justify-center flex-col pb-4 z-[100] rounded left-[100px] top-[100px] bg-white border-2 shadow border-gray-300">
+            <div class="p-2 h-[180px] flex items-center justify-center flex-col pb-4 border">
                 <div class="flex justify-end w-full px-2">
                     <button @click.stop="store.setTag(project, rangeWordStart - 1, rangeWordEnd, '')"
                         class="text-sm hover:bg-gray-200 px-4 py-1 border rounded">正常</button>
@@ -230,6 +225,12 @@ function pieceMouseup(e) {
                 <WordAdjust @afterEdit="clearSelection" :from="selWordStart" :to="selWordEnd" :projectid="project.id" />
             </div>
         </div>
+
+        <div v-if="store.stop" class="fixed right-1 bottom-1 z-10">
+            <button @click="() => { store.stop(); store.stop = null }"
+                class="w-[70px] h-[70px] rounded-full border-2 hover:bg-gray-600 bg-gray-600/70 text-white">stop</button>
+        </div>
+
         <div class="fixed right-[20px] top-[100px]  border-[1px] p-2 bg-gray-100">
             <div class="text-lg p-2 text-gray-600 antialiased font-bold">故事大纲：</div>
             <div class="max-h-[80vh] overflow-y-auto w-[300px]">
