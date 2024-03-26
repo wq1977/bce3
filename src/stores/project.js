@@ -247,7 +247,7 @@ export const useProjectStore = defineStore("project", () => {
   async function buildBeepBuffer() {
     const offlineCtx = new OfflineAudioContext(1, 100, GENURATE_SAMPLE_RATE);
     let g = offlineCtx.createGain();
-    g.gain.value = 0.5;
+    g.gain.value = 0.3;
     g.connect(offlineCtx.destination);
 
     var oscillator = offlineCtx.createOscillator();
@@ -919,13 +919,7 @@ export const useProjectStore = defineStore("project", () => {
       }
     } else {
       for (let i = wordstart; i < wordend; i++) {
-        if (!tag) {
-          const value = project.words[i]
-          delete value.tag
-          project.words[i] = value;
-        } else {
-          project.words[i].type = tag;
-        }
+        project.words[i].type = tag;
       }
     }
     for (let i = 0; i < project.paragraphs.length; i++) {
