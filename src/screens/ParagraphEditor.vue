@@ -166,7 +166,7 @@ function pieceMouseup(e) {
                 await store.stop()
                 await new Promise(r => setTimeout(r, 300))
             }
-            if (rangeWordStart) {
+            if (selectRange.value) {
                 if (wordBase > rangeWordStart) {
                     rangeWordEnd = wordBase
                     range.setStart(selectRange.value.startContainer, selectRange.value.startOffset)
