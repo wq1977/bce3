@@ -195,34 +195,41 @@ function pieceMouseup(e) {
             <input v-model="project.name" @change="store.saveProject(project)" placeholder="请输入单集标题" />
         </div>
         <div class="pr-[320px] flex-1 flex flex-col" @click="clearSelection">
-            <div class="overflow-y-auto max-h-[calc(100vh-320px)] p-1">
-                <div ref="paraRefs" v-for="(paragraph, idx) in project.paragraphs"
-                    class="text-justify leading-relaxed p-2 focus:outline-none " :key="paragraph.start">
-                    <div>
-                        <span contenteditable @keydown="preventEnter" @blur="setComment($event, idx)"
-                            :data-used="!!paragraph.comment"
-                            class="font-black text-gray-300 data-[used=true]:text-green-600 mr-2 px-1">
-                            {{ `${paragraph.comment || '未使用'}` }}</span>
-                        <Icon @click="store.playParagraph(project, paragraph)" icon="zondicons:play-outline"
-                            class="inline mr-2" />
-                        <span>&nbsp;&nbsp;</span>
-                        <span v-for="(piece, pidx) in paragraph.pieces" :data-paragraph="idx" :data-piece="pidx"
-                            :data-tag="piece.type || 'normal'" @dblclick="onTxtDbclick" @click.stop="pieceMouseup"
-                            :data-ishot="piece.ishot" @keydown="paragraphKeyDown($event, idx, piece)" tabindex="0"
-                            class="leading-loose select-none break-all focus:outline-none decoration-4 decoration-dashed data-[tag=mute]:underline data-[tag=beep]:line-through data-[ishot=true]:bg-orange-200 data-[tag=beep]:decoration-wavy data-[tag=beep]:text-blue-600 data-[tag=delete]:line-through data-[tag=delete]:text-red-600 antialiased">
-                            {{ piece.text }} </span>
+            <div class="border max-h-[calc(100vh-320px)] py-2 px-1 bg-gray-100">
+                <div class="max-h-[calc(100vh-320px-1rem)] overflow-y-auto">
+                    <div ref="paraRefs" v-for="(paragraph, idx) in project.paragraphs"
+                        class="text-justify leading-relaxed p-2 focus:outline-none " :key="paragraph.start">
+                        <div>
+                            <span contenteditable @keydown="preventEnter" @blur="setComment($event, idx)"
+                                :data-used="!!paragraph.comment"
+                                class="font-black text-gray-300 data-[used=true]:text-green-600 mr-2 px-1">
+                                {{ `${paragraph.comment || '未使用'}` }}</span>
+                            <Icon @click="store.playParagraph(project, paragraph)" icon="zondicons:play-outline"
+                                class="inline mr-2" />
+                            <span>&nbsp;&nbsp;</span>
+                            <span v-for="(piece, pidx) in paragraph.pieces" :data-paragraph="idx" :data-piece="pidx"
+                                :data-tag="piece.type || 'normal'" @dblclick="onTxtDbclick" @click.stop="pieceMouseup"
+                                :data-ishot="piece.ishot" @keydown="paragraphKeyDown($event, idx, piece)" tabindex="0"
+                                class="leading-loose select-none break-all focus:outline-none decoration-4 decoration-dashed data-[tag=mute]:underline data-[tag=beep]:line-through data-[ishot=true]:bg-orange-200 data-[tag=beep]:decoration-wavy data-[tag=beep]:text-blue-600 data-[tag=delete]:line-through data-[tag=delete]:text-red-600 antialiased">
+                                {{ piece.text }} </span>
+                        </div>
                     </div>
-
                 </div>
             </div>
-            <div class="p-2 h-[180px] flex items-center justify-center flex-col pb-4 border">
-                <div class="flex justify-end w-full px-2">
-                    <button @click.stop="store.setTag(project, rangeWordStart - 1, rangeWordEnd, '')"
-                        class="text-sm hover:bg-gray-200 px-4 py-1 border rounded">正常</button>
-                    <button @click.stop="store.setTag(project, rangeWordStart - 1, rangeWordEnd, 'delete')"
-                        class="text-sm hover:bg-gray-200 px-4 py-1 border rounded">删除</button>
+            <div class="p-1 h-[180px] bg-gray-100 flex items-center justify-center flex-col pb-4 border">
+                <div class="flex justify-end w-full p-2">
+                    <Icon @click.stop="store.setTag(project, rangeWordStart - 1, rangeWordEnd, '')"
+                        class="rounded-full p-[4px] stroke-gray-300 text-gray-300 hover:stroke-black hover:text-black fill-gray-200 border w-[2em] h-[2em] bg-white hover:bg-gray-300"
+                        icon="tabler:wave-sine" />
+                    <Icon @click.stop="store.setTag(project, rangeWordStart - 1, rangeWordEnd, 'delete')"
+                        class="rounded-full p-[4px] stroke-gray-300 text-gray-300 hover:stroke-black hover:text-black fill-gray-200 border w-[2em] h-[2em] bg-white hover:bg-gray-300"
+                        icon="fluent:delete-off-20-filled" />
+                    <Icon @click.stop="store.setTag(project, rangeWordStart - 1, rangeWordEnd, 'beep')"
+                        class="rounded-full p-[4px] stroke-gray-300 text-gray-300 hover:stroke-black hover:text-black fill-gray-200 border w-[2em] h-[2em] bg-white hover:bg-gray-300"
+                        icon="typcn:waves" />
                 </div>
-                <WordAdjust @afterEdit="clearSelection" :from="selWordStart" :to="selWordEnd" :projectid="project.id" />
+                <WordAdjust class="flex-1" @afterEdit="clearSelection" :from="selWordStart" :to="selWordEnd"
+                    :projectid="project.id" />
             </div>
         </div>
 

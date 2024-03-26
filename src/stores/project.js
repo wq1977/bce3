@@ -212,13 +212,13 @@ export const useProjectStore = defineStore("project", () => {
 
   function smartEdit(project, wordidx) {
     let start = 0
-      for (let i = wordidx - 1; i >= 0; i--) {
-        if (project.words[i].type !== project.words[wordidx].type) {
-          start = i + 1
-          break
-        }
+    for (let i = wordidx - 1; i >= 0; i--) {
+      if (project.words[i].type !== project.words[wordidx].type) {
+        start = i + 1
+        break
       }
-      setTag(project, start, wordidx+1, project.words[wordidx].type == 'delete' ? '' : 'delete')
+    }
+    setTag(project, start, wordidx + 1, project.words[wordidx].type == 'delete' ? '' : 'delete')
   }
 
   //把某个段落从某个piece的position的位置分为两段
@@ -919,7 +919,13 @@ export const useProjectStore = defineStore("project", () => {
       }
     } else {
       for (let i = wordstart; i < wordend; i++) {
-        project.words[i].type = tag;
+        if (!tag) {
+          const value = project.words[i]
+          delete value.tag
+          project.words[i] = value;
+        } else {
+          project.words[i].type = tag;
+        }
       }
     }
     for (let i = 0; i < project.paragraphs.length; i++) {
