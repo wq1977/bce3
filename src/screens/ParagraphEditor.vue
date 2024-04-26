@@ -66,7 +66,7 @@ function preventEnter(e) {
 
 function paragraphKeyDown(e, paragraphIdx, piece) {
     if (e.code == 'Enter') {
-        const position = getSelection().baseOffset
+        const position = rangeWordStart
         store.splitParagraph(project.value, paragraphIdx, piece, position)
     }
 }

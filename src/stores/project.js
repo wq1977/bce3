@@ -223,7 +223,7 @@ export const useProjectStore = defineStore("project", () => {
 
   //把某个段落从某个piece的position的位置分为两段
   function splitParagraph(project, paragraphIdx, piece, position) {
-    const wordidx = getWordIndex(project, piece, position);
+    const wordidx = position // getWordIndex(project, piece, position);
     if (wordidx >= 0) {
       const pstart = project.paragraphs[paragraphIdx].start;
       const pend = project.paragraphs[paragraphIdx].end;
