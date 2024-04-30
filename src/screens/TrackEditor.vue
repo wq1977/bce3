@@ -84,11 +84,12 @@ function label(track) {
         <span class="w-[100px] text-xs font-bold text-gray-500 text-center">{{ label(track) }}<br>{{
             store.formatDuration(store.getTrackLen(track))
         }}</span>
-        <Draggable v-model="track.origin" group="trackclip" class="flex flex-1 items-center p-2" item-key="name">
+        <Draggable v-model="track.origin" @end="store.saveProject(project)" group="trackclip"
+            class="flex flex-1 items-center p-2" item-key="name">
             <template #item="{ element }">
                 <div v-if="element.buffer" :style="{ width: `${clipwidth(element)}%` }"
                     class="group relative bg-gray-200 border border-gray-300 flex justify-center text-sm p-2 font-bold text-gray-500 cursor-grab">
-                    {{ element.name }}
+                    {{ element.name }} ({{ element.volumn || 1.0 }})
                     <Icon @click.stop="deleteBuffer(project, track, element)" icon="fluent:delete-12-regular"
                         class="group-hover:inline hidden absolute text-lg right-1 top-1 text-blue-300 hover:text-blue-500" />
                 </div>
@@ -109,10 +110,11 @@ function label(track) {
         </label>
         <button @click="doRecognition" :disabled="store.recognitionProgress >= 0 || store.projectTrackLen(project) <= 0"
             class="disabled:text-gray-300 disabled:hover:bg-gray-200 mr-2 w-[100px] h-[35px] bg-gray-200 text-blue-500 font-semibold hover:bg-gray-300 shadow-sm inline-flex  items-center justify-center rounded-[4px] px-[15px] leading-none outline-none transition-all">开始识别</button>
-        <button :disabled="store.progressType == 'recognition' || store.projectTrackLen(project) <= 0" v-if="!store.stop"
-            @click="playTrack"
+        <button :disabled="store.progressType == 'recognition' || store.projectTrackLen(project) <= 0"
+            v-if="!store.stop" @click="playTrack"
             class="disabled:text-gray-300 disabled:hover:bg-gray-200 mr-2 w-[100px] h-[35px] bg-gray-200 text-blue-500 font-semibold hover:bg-gray-300 shadow-sm inline-flex  items-center justify-center rounded-[4px] px-[15px] leading-none outline-none transition-all">播放</button>
-        <button :disabled="store.progressType == 'recognition'" v-else @click="() => { store.stop(); store.stop = null; }"
+        <button :disabled="store.progressType == 'recognition'" v-else
+            @click="() => { store.stop(); store.stop = null; }"
             class="disabled:text-gray-300 disabled:hover:bg-gray-200 mr-2 w-[100px] h-[35px] bg-gray-200 text-blue-500 font-semibold hover:bg-gray-300 shadow-sm inline-flex  items-center justify-center rounded-[4px] px-[15px] leading-none outline-none transition-all">停止</button>
     </div>
 </template>

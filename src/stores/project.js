@@ -327,7 +327,7 @@ export const useProjectStore = defineStore("project", () => {
             track,
             idx,
             piece.start,
-            piece.end
+            piece.end,
           );
           if (duration > 0) {
             piece.sources.push({
@@ -336,6 +336,7 @@ export const useProjectStore = defineStore("project", () => {
               offset,
               duration,
               buffer: track.origin[idx].buffer,
+              volumn: track.origin[idx].volumn || 1.0
             });
             when += duration;
           }
@@ -433,6 +434,7 @@ export const useProjectStore = defineStore("project", () => {
           offset: 0,
           duration: origin.buffer.duration,
           buffer: origin.buffer,
+          volumn: origin.volumn || 1.0
         });
         when += origin.buffer.duration;
       }
