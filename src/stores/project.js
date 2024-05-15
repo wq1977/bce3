@@ -240,12 +240,13 @@ export const useProjectStore = defineStore("project", () => {
         end: wordidx - 1,
         comment: project.paragraphs[paragraphIdx].comment,
         pieces: words2pieces(project, pstart, wordidx - 1),
+        track: project.paragraphs[paragraphIdx].track
       };
       if (wordidx <= pend) {
         project.paragraphs.splice(paragraphIdx + 1, 0, {
           start: wordidx,
           end: pend,
-          comment: "",
+          comment: project.words.slice(wordidx, wordidx + 4).map(w => w.word).join(''),
           pieces: words2pieces(project, wordidx, pend + 1),
         });
       }
@@ -322,13 +323,16 @@ export const useProjectStore = defineStore("project", () => {
     return true;
   }
 
-  function preparePieceAudioSource(project, piece) {
+  function preparePieceAudioSource(project, piece, paragraph) {
     if (!bufferReady(project)) {
       return;
     }
     if (!piece.type || piece.type == "normal") {
       piece.sources = [];
       for (let track of project.tracks) {
+        if (paragraph && paragraph.track && track.name !== paragraph.track) {
+          continue
+        }
         let when = 0;
         for (let idx = 0; idx < track.origin.length; idx++) {
           const { offset, duration, delay } = getTrackSource(
@@ -395,7 +399,7 @@ export const useProjectStore = defineStore("project", () => {
 
   function prepareParagraphPieceForPlay(project, paragraph) {
     paragraph.pieces.forEach((piece) =>
-      preparePieceAudioSource(project, piece)
+      preparePieceAudioSource(project, piece, paragraph)
     );
     let when = 0;
     for (let piece of paragraph.pieces) {
@@ -808,13 +812,12 @@ export const useProjectStore = defineStore("project", () => {
     const result = [];
     for (let index = 0; index < project.paragraphs.length; index++) {
       const p = project.paragraphs[index];
-      if (p.comment) {
-        result.push({
-          title: p.comment,
-          index,
-          sequence: p.sequence,
-        });
-      }
+      result.push({
+        title: p.comment || '未命名',
+        index,
+        sequence: p.sequence,
+        track: p.track
+      });
     }
     const list = result.sort(
       (a, b) => (a.sequence || a.index) - (b.sequence || b.index)

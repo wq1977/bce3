@@ -19,6 +19,11 @@ if (!store.list.length) {
     init()
 }
 
+function resort() {
+    project.value.paragraphs.sort((a, b) => a.start - b.start).forEach(p => p.sequence = 0)
+    store.saveParagraph(project.value)
+}
+
 const titlelist = computed({
     get: () => {
         const list = store.getContentBlocks(project.value).map(b => ({
@@ -141,6 +146,17 @@ function clearSelection(e) {
     highlight.clear()
     selectRange.value = null
 }
+
+function selectTrack(index, track) {
+    if (project.value.paragraphs[index].track == track) {
+        project.value.paragraphs[index].track = ''
+    } else {
+        project.value.paragraphs[index].track = track
+    }
+    project.value.paragraphs[index] = { ...project.value.paragraphs[index] }
+    store.saveParagraph(project.value)
+}
+
 function pieceMouseup(e) {
     const range = document.caretRangeFromPoint(e.clientX, e.clientY)
     let nodeBase = range.startContainer
@@ -203,7 +219,7 @@ function pieceMouseup(e) {
                             <span contenteditable @keydown="preventEnter" @blur="setComment($event, idx)"
                                 :data-used="!!paragraph.comment"
                                 class="font-black text-gray-300 data-[used=true]:text-green-600 mr-2 px-1">
-                                {{ `${paragraph.comment || '未使用'}` }}</span>
+                                {{ `${paragraph.comment || '未命名'}` }}</span>
                             <Icon @click="store.playParagraph(project, paragraph)" icon="zondicons:play-outline"
                                 class="inline mr-2" />
                             <span>&nbsp;&nbsp;</span>
@@ -239,15 +255,36 @@ function pieceMouseup(e) {
         </div>
 
         <div class="fixed right-[20px] top-[100px]  border-[1px] p-2 bg-gray-100">
-            <div class="text-lg p-2 text-gray-600 antialiased font-bold">故事大纲：</div>
+            <div @click="resort" class="text-lg p-2 text-gray-600 antialiased font-bold">故事大纲：</div>
             <div class="max-h-[80vh] overflow-y-auto w-[300px]">
+
                 <Draggable v-model="titlelist" item-key="title">
                     <template #item="{ element }">
                         <div @click="focusParagraph(element.index)"
-                            class="text-sm bg-gray-100 cursor-grab border-2 mb-1 rounded p-2 text-ellipsis overflow-hidden whitespace-nowrap antialiased">
+                            class="text-sm bg-gray-100 cursor-grab border-2 mb-1 rounded p-2 text-ellipsis overflow-hidden whitespace-nowrap antialiased flex">
                             <span class="font-mono font-thin text-gray-500"> {{ element.duration }} </span>
                             &nbsp;
-                            <span class="font-bold">{{ element.title }} </span>
+                            <ContextMenuRoot>
+                                <ContextMenuTrigger class="select-none">
+                                    <span class="font-bold">{{ element.title }} </span>
+                                </ContextMenuTrigger>
+                                <ContextMenuPortal>
+                                    <ContextMenuContent
+                                        class="min-w-[100px] z-30 bg-white outline-none rounded-md p-[5px] shadow-[0px_10px_38px_-10px_rgba(22,_23,_24,_0.35),_0px_10px_20px_-15px_rgba(22,_23,_24,_0.2)] will-change-[opacity,transform] data-[side=top]:animate-slideDownAndFade data-[side=right]:animate-slideLeftAndFade data-[side=bottom]:animate-slideUpAndFade data-[side=left]:animate-slideRightAndFade"
+                                        :side-offset="5">
+                                        <ContextMenuCheckboxItem
+                                            :checked="!element.track || element.track == track.name"
+                                            @select="selectTrack(element.index, track.name)"
+                                            v-for="track in project.tracks"
+                                            class="group text-[13px] leading-none text-grass11 rounded-[3px] flex items-center h-[25px] px-[5px] relative pl-[25px] select-none outline-none data-[disabled]:text-mauve8 data-[disabled]:pointer-events-none data-[highlighted]:bg-green9 data-[highlighted]:text-green1">
+                                            <ContextMenuItemIndicator
+                                                class="absolute left-0 w-[25px] inline-flex items-center justify-center">
+                                                <Icon icon="radix-icons:check" />
+                                            </ContextMenuItemIndicator> {{ track.name }}
+                                        </ContextMenuCheckboxItem>
+                                    </ContextMenuContent>
+                                </ContextMenuPortal>
+                            </ContextMenuRoot>
                         </div>
                     </template>
                 </Draggable>

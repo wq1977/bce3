@@ -32,6 +32,14 @@ async function deleteBuffer(proj, track, buffer) {
     store.saveProject(proj)
 }
 
+async function updateTrackName(proj, track) {
+    const result = await showInputDialog('设置轨道名', '请输入轨道名', track.name)
+    if (result) {
+        track.name = result
+        store.saveProject(proj)
+    }
+}
+
 async function setVolumn(proj, track, buffer) {
     const target = track.origin.filter(o => o == buffer)[0]
     const result = await showInputDialog('设置音量', '请输入音量 ，1代表 原始音量', target.volumn || 1)
@@ -100,7 +108,8 @@ function label(track) {
         </SliderRoot>
     </div>
     <div v-for="track in project ? project.tracks : []" class="flex items-center ">
-        <span class="w-[100px] text-xs font-bold text-gray-500 text-center">{{ label(track) }}<br>{{
+        <span @click="updateTrackName(project, track)" class="w-[100px] text-xs font-bold text-gray-500 text-center">{{
+            label(track) }}<br>{{
             store.formatDuration(store.getTrackLen(track))
         }}</span>
         <Draggable v-model="track.origin" @end="store.saveProject(project)" group="trackclip"
