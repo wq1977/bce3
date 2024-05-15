@@ -1,7 +1,7 @@
 <script setup>
 import { Icon } from '@iconify/vue';
 import Draggable from 'vuedraggable'
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, inject } from 'vue'
 import { useRoute, useRouter } from 'vue-router';
 import { useProjectStore } from '../stores/project';
 
@@ -26,9 +26,28 @@ function clipwidth(clip) {
     return clip.buffer ? (clip.buffer.duration * 100 / total.value) : 0
 }
 
-function deleteBuffer(proj, track, buffer) {
+const showInputDialog = inject('showInputDialog')
+async function deleteBuffer(proj, track, buffer) {
     track.origin = track.origin.filter(o => o != buffer)
     store.saveProject(proj)
+}
+
+async function setVolumn(proj, track, buffer) {
+    const target = track.origin.filter(o => o == buffer)[0]
+    const result = await showInputDialog('设置音量', '请输入音量 ，1代表 原始音量', target.volumn || 1)
+    if (result) {
+        target.volumn = parseFloat(result)
+        store.saveProject(proj)
+    }
+}
+
+async function setDelay(proj, track, buffer) {
+    const target = track.origin.filter(o => o == buffer)[0]
+    const result = await showInputDialog('设置延迟', '请输入延迟时间 ，单位是秒', target.delay || 0)
+    if (result) {
+        target.delay = parseFloat(result)
+        store.saveProject(proj)
+    }
 }
 
 const playProgress = ref([0])
@@ -87,11 +106,18 @@ function label(track) {
         <Draggable v-model="track.origin" @end="store.saveProject(project)" group="trackclip"
             class="flex flex-1 items-center p-2" item-key="name">
             <template #item="{ element }">
-                <div v-if="element.buffer" :style="{ width: `${clipwidth(element)}%` }"
+                <div v-if="element.buffer" :title="`音量:${element.volumn || 1.0} 延时:${element.delay || 0}`"
+                    :style="{ width: `${clipwidth(element)}%` }"
                     class="group relative bg-gray-200 border border-gray-300 flex justify-center text-sm p-2 font-bold text-gray-500 cursor-grab">
-                    {{ element.name }} ({{ element.volumn || 1.0 }})
-                    <Icon @click.stop="deleteBuffer(project, track, element)" icon="fluent:delete-12-regular"
-                        class="group-hover:inline hidden absolute text-lg right-1 top-1 text-blue-300 hover:text-blue-500" />
+                    {{ element.name }}
+                    <div class="absolute right-1 top-1">
+                        <Icon @click.stop="setDelay(project, track, element)" icon="game-icons:duration"
+                            class="group-hover:inline hidden  text-lg text-blue-300 hover:text-blue-500 mr-1" />
+                        <Icon @click.stop="setVolumn(project, track, element)" icon="iconamoon:volume-up-duotone"
+                            class="group-hover:inline hidden  text-lg text-blue-300 hover:text-blue-500 mr-1" />
+                        <Icon @click.stop="deleteBuffer(project, track, element)" icon="fluent:delete-12-regular"
+                            class="group-hover:inline hidden  text-lg text-blue-300 hover:text-blue-500" />
+                    </div>
                 </div>
             </template>
         </Draggable>

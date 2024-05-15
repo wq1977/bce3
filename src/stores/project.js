@@ -22,7 +22,7 @@ function getTrackSource(track, idx, start, end) {
     offset = start;
 
   for (let i = 0; i < idx; i++) {
-    secondSkip += track.origin[i].buffer.duration;
+    secondSkip += track.origin[i].buffer.duration + (track.origin[i].delay || 0);
   }
   // idx指的是第几个buffer,一个track可能有多个buffer,start和end有可能跨越多个track
   // 将start和end映射到这个buffer的时候，start 有可能小于0，等于0或者大于0
@@ -31,10 +31,10 @@ function getTrackSource(track, idx, start, end) {
     duration += offset;
     offset = 0;
   }
-  if (offset > track.origin[idx].buffer.duration) {
+  if (offset > (track.origin[idx].buffer.duration + (track.origin[idx].delay || 0))) {
     duration = 0;
-  } else if (offset + duration > track.origin[idx].buffer.duration) {
-    duration -= offset + duration - track.origin[idx].buffer.duration;
+  } else if (offset + duration > (track.origin[idx].buffer.duration + (track.origin[idx].delay || 0))) {
+    duration -= offset + duration - (track.origin[idx].buffer.duration + (track.origin[idx].delay || 0));
   }
   return { offset, duration };
 }
@@ -407,7 +407,7 @@ export const useProjectStore = defineStore("project", () => {
   function getTrackLen(track) {
     let trackLength = 0;
     for (let origin of track.origin) {
-      trackLength += origin.buffer ? origin.buffer.duration : 0;
+      trackLength += origin.buffer ? origin.buffer.duration : 0 + (origin.delay || 0);
     }
     return trackLength;
   }
@@ -430,13 +430,13 @@ export const useProjectStore = defineStore("project", () => {
       let when = 0;
       for (let origin of track.origin) {
         sources.push({
-          when,
+          when: when + (origin.delay || 0),
           offset: 0,
           duration: origin.buffer.duration,
           buffer: origin.buffer,
           volumn: origin.volumn || 1.0
         });
-        when += origin.buffer.duration;
+        when += origin.buffer.duration + (origin.delay || 0);
       }
     }
     play(sources, seek, ctx);
