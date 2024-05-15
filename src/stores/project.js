@@ -19,7 +19,8 @@ function getTrackSource(track, idx, start, end) {
   //start 和 end 是全局的以秒为单位的开始和结束时间，比如 1.01, 2
   let secondSkip = 0,
     duration = end - start,
-    offset = start;
+    offset = start,
+    delay = 0
 
   for (let i = 0; i < idx; i++) {
     secondSkip += track.origin[i].buffer.duration + (track.origin[i].delay || 0);
@@ -36,7 +37,14 @@ function getTrackSource(track, idx, start, end) {
   } else if (offset + duration > (track.origin[idx].buffer.duration + (track.origin[idx].delay || 0))) {
     duration -= offset + duration - (track.origin[idx].buffer.duration + (track.origin[idx].delay || 0));
   }
-  return { offset, duration };
+  if (track.origin[idx].delay && offset <= track.origin[idx].delay) {
+    offset = 0
+    delay = track.origin[idx].delay - offset
+    duration -= delay
+  } else if (track.origin[idx].delay && offset > track.origin[idx].delay) {
+    offset -= track.origin[idx].delay
+  }
+  return { offset, duration, delay };
 }
 function words2pieces(project, start, end) {
   const words = project.words.slice(start, end + 1);
@@ -323,12 +331,13 @@ export const useProjectStore = defineStore("project", () => {
       for (let track of project.tracks) {
         let when = 0;
         for (let idx = 0; idx < track.origin.length; idx++) {
-          const { offset, duration } = getTrackSource(
+          const { offset, duration, delay } = getTrackSource(
             track,
             idx,
             piece.start,
             piece.end,
           );
+          when += delay || 0
           if (duration > 0) {
             piece.sources.push({
               type: "content",
@@ -393,6 +402,7 @@ export const useProjectStore = defineStore("project", () => {
       (piece.sources || []).forEach((s) => {
         s.when = s.when + when;
       });
+      console.log('prepare piece', piece.sources)
       when += isNaN(piece.duration) ? piece.end - piece.start : piece.duration;
     }
   }
