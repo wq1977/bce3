@@ -224,9 +224,10 @@ function pieceMouseup(e) {
                                 class="inline mr-2" />
                             <span>&nbsp;&nbsp;</span>
                             <span v-for="(piece, pidx) in paragraph.pieces" :data-paragraph="idx" :data-piece="pidx"
-                                :data-tag="piece.type || 'normal'" @dblclick="onTxtDbclick" @click.stop="pieceMouseup"
-                                :data-ishot="piece.ishot" @keydown="paragraphKeyDown($event, idx, piece)" tabindex="0"
-                                class="leading-loose select-none break-all focus:outline-none decoration-4 decoration-dashed data-[tag=mute]:underline data-[tag=beep]:line-through data-[ishot=true]:bg-orange-200 data-[tag=beep]:decoration-wavy data-[tag=beep]:text-blue-600 data-[tag=delete]:line-through data-[tag=delete]:text-red-600 antialiased">
+                                :data-tag="piece.type ? piece.type.split('-')[0] : 'normal'" @dblclick="onTxtDbclick"
+                                @click.stop="pieceMouseup" :data-ishot="piece.ishot"
+                                @keydown="paragraphKeyDown($event, idx, piece)" tabindex="0"
+                                class="leading-loose select-none break-all focus:outline-none decoration-4 decoration-dashed data-[tag=patch]:bg-yellow-200 data-[tag=mute]:underline data-[tag=beep]:line-through data-[ishot=true]:bg-orange-200 data-[tag=beep]:decoration-wavy data-[tag=beep]:text-blue-600 data-[tag=delete]:line-through data-[tag=delete]:text-red-600 antialiased">
                                 {{ piece.text }} </span>
                         </div>
                     </div>
@@ -236,13 +237,32 @@ function pieceMouseup(e) {
                 <div class="flex justify-end w-full p-2">
                     <Icon @click.stop="store.setTag(project, rangeWordStart - 1, rangeWordEnd, '')"
                         class="rounded-full p-[4px] stroke-gray-300 text-gray-300 hover:stroke-black hover:text-black fill-gray-200 border w-[2em] h-[2em] bg-white hover:bg-gray-300"
-                        icon="tabler:wave-sine" />
+                        icon="tabler:wave-sine" title="Normal" />
                     <Icon @click.stop="store.setTag(project, rangeWordStart - 1, rangeWordEnd, 'delete')"
                         class="rounded-full p-[4px] stroke-gray-300 text-gray-300 hover:stroke-black hover:text-black fill-gray-200 border w-[2em] h-[2em] bg-white hover:bg-gray-300"
-                        icon="fluent:delete-off-20-filled" />
+                        icon="fluent:delete-off-20-filled" title="Delete" />
                     <Icon @click.stop="store.setTag(project, rangeWordStart - 1, rangeWordEnd, 'beep')"
                         class="rounded-full p-[4px] stroke-gray-300 text-gray-300 hover:stroke-black hover:text-black fill-gray-200 border w-[2em] h-[2em] bg-white hover:bg-gray-300"
-                        icon="typcn:waves" />
+                        icon="typcn:waves" title="Beep" />
+
+                    <DropdownMenuRoot>
+                        <DropdownMenuTrigger class="select-none">
+                            <Icon
+                                class="rounded-full p-[4px] stroke-gray-300 text-gray-300 hover:stroke-black hover:text-black fill-gray-200 border w-[2em] h-[2em] bg-white hover:bg-gray-300"
+                                icon="arcticons:lspatch" title="Patch" />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuPortal>
+                            <DropdownMenuContent
+                                class="min-w-[100px] z-30 bg-white outline-none rounded-md p-[5px] shadow-[0px_10px_38px_-10px_rgba(22,_23,_24,_0.35),_0px_10px_20px_-15px_rgba(22,_23,_24,_0.2)] will-change-[opacity,transform] data-[side=top]:animate-slideDownAndFade data-[side=right]:animate-slideLeftAndFade data-[side=bottom]:animate-slideUpAndFade data-[side=left]:animate-slideRightAndFade"
+                                :side-offset="5">
+                                <DropdownMenuItem v-for="patch in project.patches"
+                                    @click.stop="store.setTag(project, rangeWordStart - 1, rangeWordEnd, `patch-${patch.name}`)"
+                                    class="group text-[13px] leading-none text-grass11 rounded-[3px] flex items-center h-[25px] px-[5px] relative pl-[25px] select-none outline-none data-[disabled]:text-mauve8 data-[disabled]:pointer-events-none data-[highlighted]:bg-green9 data-[highlighted]:text-green1">
+                                    {{ patch.name }}
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenuPortal>
+                    </DropdownMenuRoot>
                 </div>
                 <WordAdjust class="flex-1" @afterEdit="clearSelection" :from="selWordStart" :to="selWordEnd"
                     :projectid="project.id" />

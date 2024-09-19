@@ -4,6 +4,7 @@ import Draggable from 'vuedraggable'
 import { ref, computed, watch, inject } from 'vue'
 import { useRoute, useRouter } from 'vue-router';
 import { useProjectStore } from '../stores/project';
+import PatchView from '../component/PatchView.vue'
 
 const store = useProjectStore()
 const route = useRoute()
@@ -82,6 +83,10 @@ function onSelectFiles(e) {
     store.appendNewTracks(project.value, e.target.files)
 }
 
+function onSelectPatch(e) {
+    store.appendNewPatch(project.value, e.target.files[0])
+}
+
 async function doRecognition() {
     await store.recognition(project.value)
     if (project.value.words && project.value.words.length) {
@@ -110,8 +115,8 @@ function label(track) {
     <div v-for="track in project ? project.tracks : []" class="flex items-center ">
         <span @click="updateTrackName(project, track)" class="w-[100px] text-xs font-bold text-gray-500 text-center">{{
             label(track) }}<br>{{
-            store.formatDuration(store.getTrackLen(track))
-        }}</span>
+                store.formatDuration(store.getTrackLen(track))
+            }}</span>
         <Draggable v-model="track.origin" @end="store.saveProject(project)" group="trackclip"
             class="flex flex-1 items-center p-2" item-key="name">
             <template #item="{ element }">
@@ -143,6 +148,12 @@ function label(track) {
             <input id="track-selector" :disabled="store.recognitionProgress >= 0" class="hidden" @change="onSelectFiles"
                 accept=".wav, .mp3, .m4a" multiple type="file" />
         </label>
+        <label for="patch-selector">
+            <span :data-disabled="store.recognitionProgress >= 0"
+                class="data-[disabled=true]:text-gray-300 data-[disabled=true]:hover:bg-gray-200 mr-2 w-[100px] h-[35px] bg-gray-200 text-blue-500 font-semibold hover:bg-gray-300 shadow-sm inline-flex  items-center justify-center rounded-[4px] px-[15px] leading-none outline-none transition-all">添加补丁</span>
+            <input id="patch-selector" :disabled="store.recognitionProgress >= 0" class="hidden" @change="onSelectPatch"
+                accept=".wav, .mp3, .m4a" type="file" />
+        </label>
         <button @click="doRecognition" :disabled="store.recognitionProgress >= 0 || store.projectTrackLen(project) <= 0"
             class="disabled:text-gray-300 disabled:hover:bg-gray-200 mr-2 w-[100px] h-[35px] bg-gray-200 text-blue-500 font-semibold hover:bg-gray-300 shadow-sm inline-flex  items-center justify-center rounded-[4px] px-[15px] leading-none outline-none transition-all">开始识别</button>
         <button :disabled="store.progressType == 'recognition' || store.projectTrackLen(project) <= 0"
@@ -151,5 +162,8 @@ function label(track) {
         <button :disabled="store.progressType == 'recognition'" v-else
             @click="() => { store.stop(); store.stop = null; }"
             class="disabled:text-gray-300 disabled:hover:bg-gray-200 mr-2 w-[100px] h-[35px] bg-gray-200 text-blue-500 font-semibold hover:bg-gray-300 shadow-sm inline-flex  items-center justify-center rounded-[4px] px-[15px] leading-none outline-none transition-all">停止</button>
+    </div>
+    <div v-if="project.patches" class="mt-5">
+        <PatchView @after-change="store.saveProject(project)" v-for="patch in project.patches" :patch="patch" />
     </div>
 </template>

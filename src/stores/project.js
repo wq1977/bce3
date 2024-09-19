@@ -20,10 +20,11 @@ function getTrackSource(track, idx, start, end) {
   let secondSkip = 0,
     duration = end - start,
     offset = start,
-    delay = 0
+    delay = 0;
 
   for (let i = 0; i < idx; i++) {
-    secondSkip += track.origin[i].buffer.duration + (track.origin[i].delay || 0);
+    secondSkip +=
+      track.origin[i].buffer.duration + (track.origin[i].delay || 0);
   }
   // idx指的是第几个buffer,一个track可能有多个buffer,start和end有可能跨越多个track
   // 将start和end映射到这个buffer的时候，start 有可能小于0，等于0或者大于0
@@ -32,17 +33,26 @@ function getTrackSource(track, idx, start, end) {
     duration += offset;
     offset = 0;
   }
-  if (offset > (track.origin[idx].buffer.duration + (track.origin[idx].delay || 0))) {
+  if (
+    offset >
+    track.origin[idx].buffer.duration + (track.origin[idx].delay || 0)
+  ) {
     duration = 0;
-  } else if (offset + duration > (track.origin[idx].buffer.duration + (track.origin[idx].delay || 0))) {
-    duration -= offset + duration - (track.origin[idx].buffer.duration + (track.origin[idx].delay || 0));
+  } else if (
+    offset + duration >
+    track.origin[idx].buffer.duration + (track.origin[idx].delay || 0)
+  ) {
+    duration -=
+      offset +
+      duration -
+      (track.origin[idx].buffer.duration + (track.origin[idx].delay || 0));
   }
   if (track.origin[idx].delay && offset <= track.origin[idx].delay) {
-    offset = 0
-    delay = track.origin[idx].delay - offset
-    duration -= delay
+    offset = 0;
+    delay = track.origin[idx].delay - offset;
+    duration -= delay;
   } else if (track.origin[idx].delay && offset > track.origin[idx].delay) {
-    offset -= track.origin[idx].delay
+    offset -= track.origin[idx].delay;
   }
   return { offset, duration, delay };
 }
@@ -68,7 +78,7 @@ function words2pieces(project, start, end) {
             currentPiece.type == "delete"
               ? 0
               : (currentPiece.frameEnd - currentPiece.frameStart) /
-              S2T_SAMPLE_RATE,
+                S2T_SAMPLE_RATE,
         });
       }
       currentPiece = {
@@ -147,8 +157,9 @@ export const useProjectStore = defineStore("project", () => {
     const hour = Math.floor(secs / 3600);
     const minute = Math.floor((secs % 3600) / 60);
     const sec = Math.floor(secs % 60);
-    return `${hour < 10 ? "0" : ""}${hour}:${minute < 10 ? "0" : ""}${minute}:${sec < 10 ? "0" : ""
-      }${sec}`;
+    return `${hour < 10 ? "0" : ""}${hour}:${minute < 10 ? "0" : ""}${minute}:${
+      sec < 10 ? "0" : ""
+    }${sec}`;
   }
   async function saveParagraph(project) {
     await api.call(
@@ -219,19 +230,24 @@ export const useProjectStore = defineStore("project", () => {
   }
 
   function smartEdit(project, wordidx) {
-    let start = 0
+    let start = 0;
     for (let i = wordidx - 1; i >= 0; i--) {
       if (project.words[i].type !== project.words[wordidx].type) {
-        start = i + 1
-        break
+        start = i + 1;
+        break;
       }
     }
-    setTag(project, start, wordidx + 1, project.words[wordidx].type == 'delete' ? '' : 'delete')
+    setTag(
+      project,
+      start,
+      wordidx + 1,
+      project.words[wordidx].type == "delete" ? "" : "delete"
+    );
   }
 
   //把某个段落从某个piece的position的位置分为两段
   function splitParagraph(project, paragraphIdx, piece, position) {
-    const wordidx = position // getWordIndex(project, piece, position);
+    const wordidx = position; // getWordIndex(project, piece, position);
     if (wordidx >= 0) {
       const pstart = project.paragraphs[paragraphIdx].start;
       const pend = project.paragraphs[paragraphIdx].end;
@@ -240,13 +256,16 @@ export const useProjectStore = defineStore("project", () => {
         end: wordidx - 1,
         comment: project.paragraphs[paragraphIdx].comment,
         pieces: words2pieces(project, pstart, wordidx - 1),
-        track: project.paragraphs[paragraphIdx].track
+        track: project.paragraphs[paragraphIdx].track,
       };
       if (wordidx <= pend) {
         project.paragraphs.splice(paragraphIdx + 1, 0, {
           start: wordidx,
           end: pend,
-          comment: project.words.slice(wordidx, wordidx + 4).map(w => w.word).join(''),
+          comment: project.words
+            .slice(wordidx, wordidx + 4)
+            .map((w) => w.word)
+            .join(""),
           pieces: words2pieces(project, wordidx, pend + 1),
         });
       }
@@ -296,6 +315,16 @@ export const useProjectStore = defineStore("project", () => {
       const buffer = await context.decodeAudioData(fileBuffer.buffer);
       buffers[project.cfg.pianwei.name] = buffer;
     }
+    for (let patch of project.patches) {
+      if (!patch.buffer) {
+        progressType.value = "load";
+        progress.value = -1;
+        const fileBuffer = await api.call("readfile", project.id, patch.path);
+        const buffer = await context.decodeAudioData(fileBuffer.buffer);
+        progressType.value = "";
+        patch.buffer = buffer;
+      }
+    }
     for (let track of project.tracks) {
       for (let idx = 0; idx < track.origin.length; idx++) {
         if (!track.origin[idx].buffer) {
@@ -331,7 +360,7 @@ export const useProjectStore = defineStore("project", () => {
       piece.sources = [];
       for (let track of project.tracks) {
         if (paragraph && paragraph.track && track.name !== paragraph.track) {
-          continue
+          continue;
         }
         let when = 0;
         for (let idx = 0; idx < track.origin.length; idx++) {
@@ -339,9 +368,9 @@ export const useProjectStore = defineStore("project", () => {
             track,
             idx,
             piece.start,
-            piece.end,
+            piece.end
           );
-          when += delay || 0
+          when += delay || 0;
           if (duration > 0) {
             piece.sources.push({
               type: "content",
@@ -349,7 +378,7 @@ export const useProjectStore = defineStore("project", () => {
               offset,
               duration,
               buffer: track.origin[idx].buffer,
-              volumn: track.origin[idx].volumn || 1.0
+              volumn: track.origin[idx].volumn || 1.0,
             });
             when += duration;
           }
@@ -406,7 +435,7 @@ export const useProjectStore = defineStore("project", () => {
       (piece.sources || []).forEach((s) => {
         s.when = s.when + when;
       });
-      console.log('prepare piece', piece.sources)
+      console.log("prepare piece", piece.sources);
       when += isNaN(piece.duration) ? piece.end - piece.start : piece.duration;
     }
   }
@@ -421,7 +450,9 @@ export const useProjectStore = defineStore("project", () => {
   function getTrackLen(track) {
     let trackLength = 0;
     for (let origin of track.origin) {
-      trackLength += origin.buffer ? origin.buffer.duration : 0 + (origin.delay || 0);
+      trackLength += origin.buffer
+        ? origin.buffer.duration
+        : 0 + (origin.delay || 0);
     }
     return trackLength;
   }
@@ -448,7 +479,7 @@ export const useProjectStore = defineStore("project", () => {
           offset: 0,
           duration: origin.buffer.duration,
           buffer: origin.buffer,
-          volumn: origin.volumn || 1.0
+          volumn: origin.volumn || 1.0,
         });
         when += origin.buffer.duration + (origin.delay || 0);
       }
@@ -660,13 +691,13 @@ export const useProjectStore = defineStore("project", () => {
         duration: buffers[project.cfg.pianwei.name].duration,
         volumns: project.cfg.pianwei.fadein
           ? [
-            {
-              at: when - Math.min(lastParagraphDuration, FADEIN_TIME),
-              volumn: lowVol,
-            },
-            { at: when, volumn: lowVol },
-            { at: when + 1, volumn: highVol },
-          ]
+              {
+                at: when - Math.min(lastParagraphDuration, FADEIN_TIME),
+                volumn: lowVol,
+              },
+              { at: when, volumn: lowVol },
+              { at: when + 1, volumn: highVol },
+            ]
           : [{ at: when, volumn: highVol }],
       };
       allsource.push(pianwei);
@@ -705,7 +736,7 @@ export const useProjectStore = defineStore("project", () => {
                   source.volumns[i].volumn +
                   ((source.volumns[i + 1].volumn - source.volumns[i].volumn) *
                     (0 - source.volumns[i].at)) /
-                  (source.volumns[i + 1].at - source.volumns[i].at),
+                    (source.volumns[i + 1].at - source.volumns[i].at),
               });
             } else {
               //no need this volumn setting, skip
@@ -813,10 +844,10 @@ export const useProjectStore = defineStore("project", () => {
     for (let index = 0; index < project.paragraphs.length; index++) {
       const p = project.paragraphs[index];
       result.push({
-        title: p.comment || '未命名',
+        title: p.comment || "未命名",
         index,
         sequence: p.sequence,
-        track: p.track
+        track: p.track,
       });
     }
     const list = result.sort(
@@ -981,6 +1012,24 @@ export const useProjectStore = defineStore("project", () => {
       project.paragraphs[idx].end
     );
   }
+  async function appendNewPatch(project, patch) {
+    const decodeContext = new AudioContext();
+    progressType.value = "load";
+    const { path, buffer } = await api.call(
+      "loadTrack",
+      project.id,
+      patch.path
+    );
+    const audioBuffer = await decodeContext.decodeAudioData(buffer.buffer);
+    progressType.value = "";
+    const p1 = {
+      name: patch.name,
+      path,
+      buffer: audioBuffer,
+    };
+    project.patches = [...(project.patches || []), p1];
+    await saveProject(project);
+  }
   async function appendNewTracks(project, files) {
     const decodeContext = new AudioContext();
     const audioBuffers = await Promise.all(
@@ -1046,6 +1095,9 @@ export const useProjectStore = defineStore("project", () => {
           delete origin.buffer;
         }
       }
+    }
+    for (let patch of json.patches || []) {
+      delete patch.buffer;
     }
     await api.call("save2file", project.id, "proj.json", json);
   }
@@ -1194,7 +1246,7 @@ export const useProjectStore = defineStore("project", () => {
         album.coverUrl = URL.createObjectURL(new Blob([cover]));
         return album.coverUrl;
       }
-    } catch (err) { }
+    } catch (err) {}
     return DefaultCover;
   }
 
@@ -1209,7 +1261,7 @@ export const useProjectStore = defineStore("project", () => {
           project.coverUrl = await loadAlbumCover(album);
         }
       }
-    } catch (err) { }
+    } catch (err) {}
   }
 
   function updateAlbumIndex(albumid) {
@@ -1278,6 +1330,7 @@ export const useProjectStore = defineStore("project", () => {
     loadTracks,
     playTracks,
     appendNewTracks,
+    appendNewPatch,
     newProject,
     deleteProject,
     saveProject,
@@ -1300,7 +1353,7 @@ export const useProjectStore = defineStore("project", () => {
     updateAlbumIndex,
     doPublishAlbum,
     fixLongWord,
-    smartEdit
+    smartEdit,
   };
 });
 
@@ -1309,7 +1362,7 @@ if (import.meta.vitest) {
   describe("", async () => {
     const { setActivePinia, createPinia } = await import("pinia");
     setActivePinia(createPinia());
-    global.api = { call: () => { }, on: () => { } };
+    global.api = { call: () => {}, on: () => {} };
     const store = useProjectStore();
     it("fox long word", () => {
       const words = store.fixLongWord([
@@ -1469,7 +1522,7 @@ if (import.meta.vitest) {
       ).toBe(1);
     });
     it("getProjectSources", async () => {
-      global.AudioContext = class { };
+      global.AudioContext = class {};
       beepBuffer = {};
       const allsources = store.getProjectSources({
         cfg: {},
