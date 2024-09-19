@@ -402,6 +402,22 @@ export const useProjectStore = defineStore("project", () => {
           volumn: 0.5,
         },
       ];
+    } else if (piece.type.startsWith("patch-")) {
+      const patchname = piece.type.slice("patch-".length);
+      const patch = project.patches.filter((p) => p.name == patchname)[0];
+      piece.sources = [
+        {
+          buffer: patch.buffer,
+          type: "content",
+          when: 0,
+          offset: (patch.start || 0) / patch.buffer.sampleRate,
+          duration:
+            ((patch.end || patch.buffer.length) - (patch.start || 0)) /
+            patch.buffer.sampleRate,
+          loop: false,
+          volumn: patch.volumn || 1,
+        },
+      ];
     }
   }
 
