@@ -338,6 +338,7 @@ const api = {
           projs.push({
             ...proj,
             id: file,
+            patches: proj.patches || [],
             cfg: proj.cfg || {},
           });
         }
