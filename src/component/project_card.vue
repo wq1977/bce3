@@ -42,7 +42,7 @@ async function setProjectUnpublished(status) {
 
 </script>
 <template>
-    <div @click="router.push(`/editor/paragraph?id=${project.id}`)"
+    <div @click="router.push(`/editor/${project.words && project.words.length ? 'paragraph' : 'track'}?id=${project.id}`)"
         class="group relative border overflow-hidden cursor-pointer rounded m-2 p-2 flex flex-col w-[200px]">
         <div v-if="syncing"
             class="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 via-red-500 to-green-500 animate-flow">
@@ -92,8 +92,8 @@ async function setProjectUnpublished(status) {
                     </DialogContent>
                 </DialogPortal>
             </DialogRoot>
-            <Icon v-if="project.unpublish" @click.stop="setProjectUnpublished(false)" title="下架" icon="fa-solid:arrow-up"
-                class="group-hover:inline hidden mr-1 text-gray-500 hover:text-gray-800" />
+            <Icon v-if="project.unpublish" @click.stop="setProjectUnpublished(false)" title="下架"
+                icon="fa-solid:arrow-up" class="group-hover:inline hidden mr-1 text-gray-500 hover:text-gray-800" />
             <Icon v-else @click.stop="setProjectUnpublished(true)" title="下架" icon="fa-solid:arrow-down"
                 class="group-hover:inline hidden mr-1 text-gray-500 hover:text-gray-800" />
             <Icon @click.stop="doDelete(project)" title="删除" icon="fluent:delete-12-regular"
@@ -101,7 +101,8 @@ async function setProjectUnpublished(status) {
         </div>
         <AlertDialogRoot v-model:open="deleteConfirm">
             <AlertDialogPortal>
-                <AlertDialogOverlay class="bg-black-gray-900 data-[state=open]:animate-overlayShow fixed inset-0 z-30" />
+                <AlertDialogOverlay
+                    class="bg-black-gray-900 data-[state=open]:animate-overlayShow fixed inset-0 z-30" />
                 <AlertDialogContent
                     class="z-[100] text-[15px] data-[state=open]:animate-contentShow fixed top-[50%] left-[50%] max-h-[85vh] w-[90vw] max-w-[500px] translate-x-[-50%] translate-y-[-50%] rounded-[6px] bg-white p-[25px] shadow-[hsl(206_22%_7%_/_35%)_0px_10px_38px_-10px,_hsl(206_22%_7%_/_20%)_0px_10px_20px_-15px] focus:outline-none">
                     <AlertDialogTitle class="text-mauve12 m-0 text-[17px] font-semibold">
