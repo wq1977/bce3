@@ -78,7 +78,7 @@ function words2pieces(project, start, end) {
             currentPiece.type == "delete"
               ? 0
               : (currentPiece.frameEnd - currentPiece.frameStart) /
-              S2T_SAMPLE_RATE,
+                S2T_SAMPLE_RATE,
         });
       }
       currentPiece = {
@@ -157,8 +157,9 @@ export const useProjectStore = defineStore("project", () => {
     const hour = Math.floor(secs / 3600);
     const minute = Math.floor((secs % 3600) / 60);
     const sec = Math.floor(secs % 60);
-    return `${hour < 10 ? "0" : ""}${hour}:${minute < 10 ? "0" : ""}${minute}:${sec < 10 ? "0" : ""
-      }${sec}`;
+    return `${hour < 10 ? "0" : ""}${hour}:${minute < 10 ? "0" : ""}${minute}:${
+      sec < 10 ? "0" : ""
+    }${sec}`;
   }
   async function saveParagraph(project) {
     await api.call(
@@ -415,7 +416,7 @@ export const useProjectStore = defineStore("project", () => {
           volumn: patch.volumn || 1,
         },
       ];
-      piece.duration = piece.sources[0].duration
+      piece.duration = piece.sources[0].duration;
     }
   }
 
@@ -704,13 +705,13 @@ export const useProjectStore = defineStore("project", () => {
         duration: buffers[project.cfg.pianwei.name].duration,
         volumns: project.cfg.pianwei.fadein
           ? [
-            {
-              at: when - Math.min(lastParagraphDuration, FADEIN_TIME),
-              volumn: lowVol,
-            },
-            { at: when, volumn: lowVol },
-            { at: when + 1, volumn: highVol },
-          ]
+              {
+                at: when - Math.min(lastParagraphDuration, FADEIN_TIME),
+                volumn: lowVol,
+              },
+              { at: when, volumn: lowVol },
+              { at: when + 1, volumn: highVol },
+            ]
           : [{ at: when, volumn: highVol }],
       };
       allsource.push(pianwei);
@@ -749,7 +750,7 @@ export const useProjectStore = defineStore("project", () => {
                   source.volumns[i].volumn +
                   ((source.volumns[i + 1].volumn - source.volumns[i].volumn) *
                     (0 - source.volumns[i].at)) /
-                  (source.volumns[i + 1].at - source.volumns[i].at),
+                    (source.volumns[i + 1].at - source.volumns[i].at),
               });
             } else {
               //no need this volumn setting, skip
@@ -1092,6 +1093,7 @@ export const useProjectStore = defineStore("project", () => {
       name: "",
       modified: new Date().getTime(),
       tracks: [],
+      patches: [],
     });
     return id;
   }
@@ -1259,7 +1261,7 @@ export const useProjectStore = defineStore("project", () => {
         album.coverUrl = URL.createObjectURL(new Blob([cover]));
         return album.coverUrl;
       }
-    } catch (err) { }
+    } catch (err) {}
     return DefaultCover;
   }
 
@@ -1274,7 +1276,7 @@ export const useProjectStore = defineStore("project", () => {
           project.coverUrl = await loadAlbumCover(album);
         }
       }
-    } catch (err) { }
+    } catch (err) {}
   }
 
   function updateAlbumIndex(albumid) {
@@ -1375,7 +1377,7 @@ if (import.meta.vitest) {
   describe("", async () => {
     const { setActivePinia, createPinia } = await import("pinia");
     setActivePinia(createPinia());
-    global.api = { call: () => { }, on: () => { } };
+    global.api = { call: () => {}, on: () => {} };
     const store = useProjectStore();
     it("fox long word", () => {
       const words = store.fixLongWord([
@@ -1535,7 +1537,7 @@ if (import.meta.vitest) {
       ).toBe(1);
     });
     it("getProjectSources", async () => {
-      global.AudioContext = class { };
+      global.AudioContext = class {};
       beepBuffer = {};
       const allsources = store.getProjectSources({
         cfg: {},
