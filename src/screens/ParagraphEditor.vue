@@ -244,6 +244,9 @@ function pieceMouseup(e) {
                     <Icon @click.stop="store.setTag(project, rangeWordStart - 1, rangeWordEnd, 'beep')"
                         class="rounded-full p-[4px] stroke-gray-300 text-gray-300 hover:stroke-black hover:text-black fill-gray-200 border w-[2em] h-[2em] bg-white hover:bg-gray-300"
                         icon="typcn:waves" title="Beep" />
+                    <Icon @click.stop="store.setTag(project, rangeWordStart - 1, rangeWordEnd, 'mute')"
+                        class="rounded-full p-[4px] stroke-gray-300 text-gray-300 hover:stroke-black hover:text-black fill-gray-200 border w-[2em] h-[2em] bg-white hover:bg-gray-300"
+                        icon="mdi:minus" title="Mute" />
 
                     <DropdownMenuRoot>
                         <DropdownMenuTrigger class="select-none">
