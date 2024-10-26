@@ -407,7 +407,7 @@ const api = {
     let model = require("path").join(appRoot, "bin", "models", "small");
     model = model.replace(/\\/g, "/");
     const target = tmppath;
-    const cp = spawn(python, ["whisper", model, target], {
+    const cp = spawn(python, [model, target], {
       env: {
         OMP_NUM_THREADS: Math.max(1, require("os").cpus.length - 1),
         LANG: "zh",
