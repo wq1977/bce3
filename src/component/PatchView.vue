@@ -128,10 +128,16 @@ async function setTrackVolumn() {
     }
 }
 
+async function updatePatchName(e) {
+    const newName = e.target.innerText
+    props.patch.name = newName
+    emit('afterChange')
+}
+
 </script>
 <template>
     <div class="flex items-center">
-        <span class="p-2" contenteditable>{{ props.patch.name }}</span>
+        <span class="p-2" contenteditable @blur="updatePatchName">{{ props.patch.name }}</span>
         <Icon @click.stop="setTrackVolumn" icon="iconamoon:volume-up-duotone"
             class="group-hover:inline text-lg text-blue-300 hover:text-blue-500 mr-1" />
         <div class="w-100 p-2 border relative flex-1">
