@@ -501,13 +501,17 @@ export const useProjectStore = defineStore("project", () => {
     play(sources, seek, ctx);
   }
 
+  function isValidParagraph(p) {
+    return p.comment && p.comment != "-";
+  }
+
   //source是一个包含内容和播放信息的片段
   //在when的时间播放buffer的offset位置，播放duration这么长，而且要loop
   function getProjectSources(project) {
     if (!project) return [];
     if (!bufferReady(project)) return [];
     const validParagraphs = (project.paragraphs || [])
-      .filter((p) => p.comment)
+      .filter((p) => isValidParagraph(p))
       .sort((a, b) => a.sequence - b.sequence);
     for (let paragraph of validParagraphs) {
       prepareParagraphPieceForPlay(project, paragraph);
@@ -857,12 +861,14 @@ export const useProjectStore = defineStore("project", () => {
     const result = [];
     for (let index = 0; index < project.paragraphs.length; index++) {
       const p = project.paragraphs[index];
-      result.push({
-        title: p.comment || "未命名",
-        index,
-        sequence: p.sequence,
-        track: p.track,
-      });
+      if (isValidParagraph(p)) {
+        result.push({
+          title: p.comment || "未命名",
+          index,
+          sequence: p.sequence,
+          track: p.track,
+        });
+      }
     }
     const list = result.sort(
       (a, b) => (a.sequence || a.index) - (b.sequence || b.index)
@@ -1369,6 +1375,7 @@ export const useProjectStore = defineStore("project", () => {
     doPublishAlbum,
     fixLongWord,
     smartEdit,
+    isValidParagraph,
   };
 });
 

@@ -217,7 +217,7 @@ function pieceMouseup(e) {
                         class="text-justify leading-relaxed p-2 focus:outline-none " :key="paragraph.start">
                         <div>
                             <span contenteditable @keydown="preventEnter" @blur="setComment($event, idx)"
-                                :data-used="!!paragraph.comment"
+                                :data-used="store.isValidParagraph(paragraph)"
                                 class="font-black text-gray-300 data-[used=true]:text-green-600 mr-2 px-1">
                                 {{ `${paragraph.comment || '未命名'}` }}</span>
                             <Icon @click="store.playParagraph(project, paragraph)" icon="zondicons:play-outline"
