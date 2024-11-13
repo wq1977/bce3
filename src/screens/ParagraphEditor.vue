@@ -165,7 +165,6 @@ function pieceMouseup(e) {
     }
     const paragraphIdxBase = parseInt(nodeBase.getAttribute('data-paragraph'))
     if (isNaN(paragraphIdxBase)) {
-        console.log('not in text zone')
         highlight.clear()
         selectRange.value = null
         return;
@@ -222,10 +221,31 @@ function pieceMouseup(e) {
                                 {{ `${paragraph.comment || '未命名'}` }}</span>
                             <Icon @click="store.playParagraph(project, paragraph)" icon="zondicons:play-outline"
                                 class="inline mr-2" />
+                            <DropdownMenuRoot v-if="project.patches && project.patches.length">
+                                <DropdownMenuTrigger class="select-none">
+                                    <Icon class="inline mr-2" icon="arcticons:lspatch" title="Patch" />
+                                </DropdownMenuTrigger>
+                                <DropdownMenuPortal>
+                                    <DropdownMenuContent
+                                        class="min-w-[100px] z-30 bg-white outline-none rounded-md p-[5px] shadow-[0px_10px_38px_-10px_rgba(22,_23,_24,_0.35),_0px_10px_20px_-15px_rgba(22,_23,_24,_0.2)] will-change-[opacity,transform] data-[side=top]:animate-slideDownAndFade data-[side=right]:animate-slideLeftAndFade data-[side=bottom]:animate-slideUpAndFade data-[side=left]:animate-slideRightAndFade"
+                                        :side-offset="5">
+                                        <DropdownMenuItem
+                                            @click.stop="store.setParagraphPatch(project, paragraph, false)"
+                                            class="group text-[13px] leading-none text-grass11 rounded-[3px] flex items-center h-[25px] px-[5px] relative pl-[25px] select-none outline-none data-[disabled]:text-mauve8 data-[disabled]:pointer-events-none data-[highlighted]:bg-green9 data-[highlighted]:text-green1">
+                                            清除
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem v-for="patch in project.patches"
+                                            @click.stop="store.setParagraphPatch(project, paragraph, patch.name)"
+                                            class="group text-[13px] leading-none text-grass11 rounded-[3px] flex items-center h-[25px] px-[5px] relative pl-[25px] select-none outline-none data-[disabled]:text-mauve8 data-[disabled]:pointer-events-none data-[highlighted]:bg-green9 data-[highlighted]:text-green1">
+                                            {{ patch.name }}
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenuPortal>
+                            </DropdownMenuRoot>
                             <span>&nbsp;&nbsp;</span>
                             <span v-for="(piece, pidx) in paragraph.pieces" :data-paragraph="idx" :data-piece="pidx"
-                                :data-tag="piece.type ? piece.type.split('-')[0] : 'normal'" @dblclick="onTxtDbclick"
-                                @click.stop="pieceMouseup" :data-ishot="piece.ishot"
+                                :data-tag="paragraph.patch ? 'patch' : piece.type ? piece.type.split('-')[0] : 'normal'"
+                                @dblclick="onTxtDbclick" @click.stop="pieceMouseup" :data-ishot="piece.ishot"
                                 @keydown="paragraphKeyDown($event, idx, piece)" tabindex="0"
                                 class="leading-loose select-none break-all focus:outline-none decoration-4 decoration-dashed data-[tag=patch]:bg-yellow-200 data-[tag=mute]:underline data-[tag=beep]:line-through data-[ishot=true]:bg-orange-200 data-[tag=beep]:decoration-wavy data-[tag=beep]:text-blue-600 data-[tag=delete]:line-through data-[tag=delete]:text-red-600 antialiased">
                                 {{ piece.text }} </span>

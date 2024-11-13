@@ -441,10 +441,30 @@ export const useProjectStore = defineStore("project", () => {
     screenLock.release();
   }
 
+  async function setParagraphPatch(project, paragraph, patch) {
+    paragraph.patch = patch;
+    await saveParagraph(project);
+  }
+
   function prepareParagraphPieceForPlay(project, paragraph) {
+    if (paragraph.patch) {
+      if (paragraph.pieces[0].type != `patch-${paragraph.patch}`) {
+        paragraph.pieces = [
+          { type: `patch-${paragraph.patch}`, text: "" },
+          ...paragraph.pieces,
+        ];
+      }
+    }
     paragraph.pieces.forEach((piece) =>
       preparePieceAudioSource(project, piece, paragraph)
     );
+    if (paragraph.patch) {
+      paragraph.pieces.forEach((piece, idx) => {
+        if (idx != 0) {
+          piece.sources = [];
+        }
+      });
+    }
     let when = 0;
     for (let piece of paragraph.pieces) {
       (piece.sources || []).forEach((s) => {
@@ -847,6 +867,7 @@ export const useProjectStore = defineStore("project", () => {
   }
 
   function getParagraphDuration(paragraph) {
+    if (paragraph.patch) return paragraph.pieces[0].duration;
     return paragraph.pieces.reduce((r, i) => r + getPieceDuration(i), 0);
   }
   /***
@@ -1375,6 +1396,7 @@ export const useProjectStore = defineStore("project", () => {
     doPublishAlbum,
     fixLongWord,
     smartEdit,
+    setParagraphPatch,
     isValidParagraph,
   };
 });
