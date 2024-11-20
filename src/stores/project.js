@@ -818,7 +818,7 @@ export const useProjectStore = defineStore("project", () => {
     }
     const deepClone = sources.map((s) => ({ ...s }));
     const totalLen = getSourcesLen(deepClone);
-    const seekPosition = totalLen * seek;
+    const seekPosition = seek;
     sources = trim(deepClone, seek);
     if (!ctx) {
       ctx = new AudioContext();
