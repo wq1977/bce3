@@ -295,7 +295,8 @@ function pieceMouseup(e) {
         <div v-if="store.stop" class="fixed right-1 bottom-1 z-10">
             <button @click="() => { store.stop(); store.stop = null }"
                 class="w-[70px] h-[70px] text-sm font-bold rounded-full border-2 hover:bg-gray-600 bg-gray-600/70 text-white">
-                <span class="font-mono">{{ (100 - Math.min(100, store.progress * 100)).toFixed(1) }}</span>
+                <span class="font-mono">{{ store.formatDuration((1 - Math.min(store.progress, 1)) *
+                    store.playDuration) }}</span>
                 <hr /> <span>STOP</span>
             </button>
         </div>

@@ -11,6 +11,7 @@ const GENURATE_SAMPLE_RATE = 44100;
 
 let beepBuffer = null;
 const progress = ref(0);
+const playDuration = ref(0);
 const progressType = ref("");
 const buffers = {};
 
@@ -157,9 +158,12 @@ export const useProjectStore = defineStore("project", () => {
     const hour = Math.floor(secs / 3600);
     const minute = Math.floor((secs % 3600) / 60);
     const sec = Math.floor(secs % 60);
-    return `${hour < 10 ? "0" : ""}${hour}:${minute < 10 ? "0" : ""}${minute}:${
-      sec < 10 ? "0" : ""
-    }${sec}`;
+    if (hour > 0) {
+      return `${hour < 10 ? "0" : ""}${hour}:${
+        minute < 10 ? "0" : ""
+      }${minute}:${sec < 10 ? "0" : ""}${sec}`;
+    }
+    return `${minute < 10 ? "0" : ""}${minute}:${sec < 10 ? "0" : ""}${sec}`;
   }
   async function saveParagraph(project) {
     await api.call(
@@ -818,6 +822,7 @@ export const useProjectStore = defineStore("project", () => {
     }
     const deepClone = sources.map((s) => ({ ...s }));
     const totalLen = getSourcesLen(deepClone);
+    playDuration.value = totalLen;
     const seekPosition = seek;
     sources = trim(deepClone, seek);
     if (!ctx) {
@@ -1350,6 +1355,7 @@ export const useProjectStore = defineStore("project", () => {
     stop,
     progressType,
     progress,
+    playDuration,
     load,
     play,
     prepare,
