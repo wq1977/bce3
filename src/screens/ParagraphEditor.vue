@@ -206,8 +206,8 @@ function pieceMouseup(e) {
 </script>
 <template>
     <div v-if="project" ref="editor" class="relative flex-1 flex flex-col">
-        <div class="text-2xl font-black antialiased p-2">
-            <input v-model="project.name" @change="store.saveProject(project)" placeholder="请输入单集标题" />
+        <div class="text-2xl font-black antialiased p-2 flex">
+            <input v-model="project.name" @change="store.saveProject(project)" class="flex-1" placeholder="请输入单集标题" />
         </div>
         <div class="pr-[320px] flex-1 flex flex-col" @click="clearSelection">
             <div class="border max-h-[calc(100vh-320px)] py-2 px-1 bg-gray-100">
